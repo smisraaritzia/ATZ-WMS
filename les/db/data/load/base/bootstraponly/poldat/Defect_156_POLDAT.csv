@@ -1,2 +1,2 @@
 polcod,polvar,polval,wh_id_tmpl,srtseq,rtstr1,rtstr2,rtnum1,rtnum2,rtft1,rtflt2,moddte,mod_usr_id,grp_nam
-'PARCEL-HANDLER','SERVICE-CONDITIONS','CARRIERLIST','DC03',4,'2020',,1,0,0,0,,SMISRA,
+PARCEL-HANDLER,SERVICE-CONDITIONS,CARRIERLIST,DC03,4,2020,,1,0,0,0,,SMISRA,
