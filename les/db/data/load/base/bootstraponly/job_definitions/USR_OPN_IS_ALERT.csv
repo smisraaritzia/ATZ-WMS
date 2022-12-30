@@ -1,0 +1,98 @@
+job_id,role_id,name,enabled,type,command,log_file,trace_level,overlap,schedule,start_delay,timer,grp_nam
+USR_OPN_IS_ALERT,,Aritzia Open Inbound Shipment Alert,0,cron,"get _warehouse id
+|
+[select trknum,
+        expclose
+   from (select trknum,
+                trkdte,
+                case when substr(trknum, instr(trknum, 'RTNS') + 10, 2) = 'PM' then trkdte + 1
+                     else trkdte + (24 / (24 * 1.0))
+                end expclose
+           from (select trknum,
+                        convert(datetime, substr(trkdte, 5, 2) + substr(trkdte, 1, 2) + substr(trkdte, 3, 2), 101) trkdte
+                   from (select trknum,
+                                substr(trknum, instr(trknum, 'RTNS') + 4, 6) trkdte
+                           from RCVTRK
+                          where rcvtrk_stat = 'R'
+                            and trknum like '%RTN%') usr) usr) usr
+  where sysdate > expclose
+  order by expclose,
+        trknum] catch(-1403) >> res
+|
+if (@? = 0)
+{
+    convert column results to string
+     where resultset = @res
+       and colnam = 'trknum'
+       and separator = '
+	   '
+    |
+    publish data
+     where hostname = 'azeus2smtp.jdadelivers.com'
+       and mail_from = 'ITWMS-' || @wh_id || 'Alerts @jdadelivers.com '
+       and send_to_list = ' hsato @aritzia.com;
+    chtang @aritzia.com;
+    cumali @aritzia.com;
+    ege @aritzia.com;
+    eComInOrderExpeditor @aritzia.com;
+    supplychaintechteam @aritzia.com '
+       and trknum = @result_string
+    |
+    expand environment variable
+     where name = ' $' || @wh_id || 'outputs '
+    |
+    [select case when charindex(' DEV ', @value) > 0 then ' BY DEV '
+                 when charindex(' TST ', @value) > 0 then ' BY QA '
+                 else ' BY PROD '
+            end envdsc
+       from dual]
+    |
+    send email
+     where subject = ' Inbound Shipments Still Open - ' || @envdsc
+       and hostname = @hostname
+       and mail_from = @mail_from
+       and send_to = @send_to_list
+       and message = ' The following Inbound Shipments are still open: ' || @trknum catch(@?)
+}
+else if (@? <> -1403)
+{
+    [select trknum
+       from RCVTRK
+      where rcvtrk_stat = ' R '
+        and trknum like ' %RTN% '] catch(-1403) >> res
+    |
+    if (@? = 0)
+    {
+        convert column results to string
+         where resultset = @res
+           and colnam = ' trknum '
+           and separator = ', '
+        |
+        publish data
+         where hostname = ' azeus2smtp.jdadelivers.com '
+           and mail_from = ' ITWMS - ' || @wh_id || 'Alerts @jdadelivers.com '
+           and send_to_list = ' hsato @aritzia.com;
+        chtang @aritzia.com;
+        cumali @aritzia.com;
+        ege @aritzia.com;
+        eComInOrderExpeditor @aritzia.com;
+        supplychaintechteam @aritzia.com '
+           and trknum = @result_string
+        |
+        expand environment variable
+         where name = ' $'$' || @wh_id || 'outputs' '
+        |
+        [select case when charindex(' DEV ', @value) > 0 then ' BY DEV '
+                     when charindex(' TST ', @value) > 0 then ' BY QA '
+                     else ' BY PROD '
+                end envdsc
+           from dual]
+        |
+        send email
+         where subject = ' Inbound Shipments Still Open - ' || !@envdsc
+           and hostname = @hostname
+           and mail_from = @mail_from
+           and send_to = @send_to_list
+           and message = ' The following Inbound Shipments are still open: ' || @trknum catch(@?)
+    }
+}",$LESDIR/log/usr_opn_is_alert.log,,0,"0 30 14 ? * * *",,,usr_data

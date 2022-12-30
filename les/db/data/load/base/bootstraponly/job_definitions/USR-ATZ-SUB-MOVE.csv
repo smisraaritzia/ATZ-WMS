@@ -1,0 +1,6 @@
+job_id,role_id,name,enabled,type,command,log_file,trace_level,overlap,schedule,start_delay,timer,grp_nam
+USR-ATZ-SUB-MOVE,,Aritzia Case Transfer Job,0,timer,"list warehouses
+|
+create usr directed work by subload
+ where wh_id = @wh_id
+",$LESDIR/log/usr_atz_sub_move.log,,0,"",0,30,dcs_data

@@ -1,0 +1,81 @@
+job_id,role_id,name,enabled,type,command,log_file,trace_level,overlap,schedule,start_delay,timer,grp_nam
+USR_PIC_CNTWRK_LOG,,Aritzia PIC CNTWRK Hourly Log,0,cron,"publish data
+ where cnttyp = 'PHY'
+   and cntbat = 'PIC2022%'
+   and audcnt = 'PA'
+   and recnt = 'PRA'
+|
+[select distinct cb.cntbat,
+        count(distinct stoloc) counts,
+        nvl(outcnt.out, 0) outcnt,
+        nvl(cmpcnt.cmp, 0) cmpcnts,
+        nvl(cmpcnt.cntqty, 0) cntqty,
+        nvl(outaud.outa, 0) outaud,
+        nvl(cmpaud.cmpa, 0) cmpaud
+   from cntwrk cb
+   left outer
+   join (select cntbat,
+                count(distinct stoloc) cmp,
+                sum(untqty) cntqty
+           from cntwrk
+          where cnttyp = @cnttyp
+            and cntbat like @cntbat
+            and cnt_usr_id is not null
+            and cntsts <> 'N'
+          group by cntbat) cmpcnt
+     on cmpcnt.cntbat = cb.cntbat
+   left outer
+   join (select cntbat,
+                count(distinct stoloc) out
+           from cntwrk
+          where cnttyp = @cnttyp
+            and cntbat like @cntbat
+            and cnt_usr_id is null
+            and cntsts <> 'N'
+          group by cntbat) outcnt
+     on outcnt.cntbat = cb.cntbat
+   left outer
+   join (select cntbat,
+                count(distinct stoloc) outa
+           from cntwrk
+          where (cnttyp = @audcnt or cnttyp = @recnt)
+            and cntbat like @cntbat
+            and cnt_usr_id is null
+            and cntsts <> 'N'
+          group by cntbat) outaud
+     on outaud.cntbat = cb.cntbat
+   left outer
+   join (select cntbat,
+                count(distinct stoloc) cmpa
+           from cntwrk
+          where (cnttyp = @audcnt or cnttyp = @recnt)
+            and cntbat like @cntbat
+            and cnt_usr_id is not null
+            and cntsts <> 'N'
+          group by cntbat) cmpaud
+     on cmpaud.cntbat = cb.cntbat
+  where cb.cnttyp = @cnttyp
+    and cb.cntbat like @cntbat
+    and cntsts <> 'N'
+  group by cb.cntbat,
+        cmpcnt.cmp,
+        outcnt.out,
+        outaud.outa,
+        cmpaud.cmpa,
+        cmpcnt.cntqty] catch(@?) >> res
+|
+if (@? = 0)
+{
+    list warehouses
+    |
+    expand environment variable
+     where name = '$' || @wh_id || 'outputs ' || ' \Physical Inventory\ '
+    |
+    publish data
+     where path = @value
+    |
+    write csv file
+     where resdata = @res
+       and filnam = ' cntwrk_ ' || ' _ ' || to_char(sysdate, ' YYYYMMDDHH24MISS ') || ' .csv '
+       and path = @path
+}",$LESDIR/log/usr_pic_cntwrk.log,,0,"0 0 6-23 4,5,6 2 ? 2022",,,usr_data

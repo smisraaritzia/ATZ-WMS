@@ -1,0 +1,101 @@
+job_id,role_id,name,enabled,type,command,log_file,trace_level,overlap,schedule,start_delay,timer,grp_nam
+USR_RPT_HST_ER,,Aritzia Report - Historical ERs,0,cron,"[select format(dateadd(day, -1, getdate()), 'MM-dd-yyyy') dte1,
+        format(dateadd(day, 0, getdate()), 'MM-dd-yyyy') dte2
+   from dual]
+|
+[select d.trndte,
+        d.oprcod,
+        d.actcod,
+        d.lodnum,
+        d.subnum,
+        d.to_lodnum,
+        d.to_subnum,
+        left(d.prtnum, 5) as generic,
+        d.prtnum,
+        d.trnqty,
+        d.fr_arecod,
+        d.frstol,
+        d.frinvs,
+        d.to_arecod,
+        d.tostol,
+        l.def_maxqvl,
+        d.usr_id
+   from dlytrn d
+  inner
+   join locmst l
+     on d.frstol = l.stoloc
+  inner
+   join (select subnum
+           from dlytrn
+          inner
+           join (select *
+                   from poldat
+                  where polcod = 'DSS-ARITZIA'
+                    and polvar = 'CASEPICK'
+                    and rtstr2 = 'EMERGENCY RPLN') rep
+             on oprcod = rep.rtstr1
+          where fr_arecod = 'RESV'
+            and trndte >= @dte1
+            and trndte < @dte2) usr
+     on d.subnum = usr.subnum
+  where d.fr_arecod in ('RESV')
+    and d.to_arecod in ('RDTS000001')
+    and d.oprcod is not null
+    and actcod in ('CASRPL')
+    and d.trndte >= @dte1
+    and d.trndte < @dte2
+ union
+ select d.trndte,
+        d.oprcod,
+        d.actcod,
+        d.lodnum,
+        d.subnum,
+        d.to_lodnum,
+        d.to_subnum,
+        left(d.prtnum, 5) as generic,
+        d.prtnum,
+        d.trnqty,
+        d.fr_arecod,
+        d.frstol,
+        d.frinvs,
+        d.to_arecod,
+        d.tostol,
+        l.def_maxqvl,
+        d.usr_id
+   from dlytrn d
+  inner
+   join locmst l
+     on d.tostol = l.stoloc
+  inner
+   join (select subnum
+           from dlytrn
+          inner
+           join (select *
+                   from poldat
+                  where polcod = 'DSS-ARITZIA'
+                    and polvar = 'CASEPICK'
+                    and rtstr2 = 'EMERGENCY RPLN') rep
+             on oprcod = rep.rtstr1
+          where fr_arecod = 'RESV'
+            and trndte >= @dte1
+            and trndte < @dte2) usr
+     on d.subnum = usr.subnum
+  where d.fr_arecod in ('RDTS000001')
+    and d.to_arecod in ('PICK')
+    and d.oprcod is not null
+    and actcod in ('CS_XFR')
+    and d.trndte >= @dte1
+    and d.trndte < @dte2] >> res
+|
+list warehouses
+|
+expand environment variable
+ where name = '$' || @wh_id || 'outputs' || '\Working Files'
+|
+publish data
+ where path = @value
+|
+write csv file
+ where resdata = @res
+   and filnam = 'historical_ERs-' || to_char(sysdate, 'YYYYMMDD-HH24MISS') || '.csv '
+   and path = @path;",$LESDIR/log/usr_rpt_hst_er.log,,0,"0 0 1 ? * * *",,,usr_data
