@@ -122,4 +122,13 @@ if (@? = 0)
     list warehouses
     |
     expand environment variable
-     where name = '$' || @wh_id || 'outputs ' || ' \Aged Orders\",$LESDIR/log/usr_rpt_agedorders2.log,,0,"0 30 11-18 ? * * *",,,usr_data
+     where name = '$' || @wh_id || 'outputs ' || ' \Aged Orders\'
+    |
+    publish data
+     where path = @value
+    |
+    write csv file
+     where resdata = @res
+       and filnam = 'aged_orders-' || to_char(sysdate, 'YYYYMMDD-hh24mi') || '.csv'
+       and path = @path
+}",$LESDIR/log/usr_rpt_agedorders2.log,,0,"0 30 11-18 ? * * *",,,usr_data
