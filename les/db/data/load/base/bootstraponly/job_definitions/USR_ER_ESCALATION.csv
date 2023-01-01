@@ -1,6 +1,5 @@
-USR_ER_ESCALATION,,Aritzia ER Escalation,0,cron,"list warehouses
-|
-[select DATEADD(d, -1, DATEDIFF(d, 0, sysdate)) + (0.0 / 24) dte1,
+USR_ER_ESCALATION,,Aritzia ER Escalation,0,cron,"[select DATEADD(d, -1, DATEDIFF(d, 0, sysdate)) + (0.0 / 24) dte1,
+        'DC03' wh_id,
         0 srchpak
    from dual]
 |
@@ -44,38 +43,40 @@ USR_ER_ESCALATION,,Aritzia ER Escalation,0,cron,"list warehouses
      on rpl.prtnum = rw.prtnum
   where schbat is not null]
 |
+list warehouses
+ where wh_id = 'DC03'
 |
 list policies
  where polcod = 'EMERGENCY-REPLENISHMENTS'
    and polvar = 'INSTALLED'
    and polval = 'INSTALLED'
-   and wh_id = @wh_id catch(-1403)
+   and wh_id = 'DC03' catch(-1403)
 |
 {
     complete emergency replenishment
      where rplref = @rplref
-       and wh_id = @wh_id
+       and wh_id = 'DC03'
        and comflg = 1 catch(@?)
     |
     commit
     |
     allocate emergency replenishment
      where rplref = @rplref
-       and wh_id = @wh_id
+       and wh_id = 'DC03'
        and comflg = 1 catch(@?)
     |
     commit
     |
     process emergency replenishment expiration
      where rplref = @rplref
-       and wh_id = @wh_id
+       and wh_id = 'DC03'
        and comflg = 1 catch(@?)
     |
     commit
     |
     process emergency replenishment errors
      where rplref = @rplref
-       and wh_id = @wh_id
+       and wh_id = 'DC03'
        and comflg = 1 catch(@?)
     |
     commit

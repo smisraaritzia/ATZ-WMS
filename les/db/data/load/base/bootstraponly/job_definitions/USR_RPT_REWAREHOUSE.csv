@@ -1,7 +1,5 @@
 job_id,role_id,name,enabled,type,command,log_file,trace_level,overlap,schedule,start_delay,timer,grp_nam
-USR_RPT_REWAREHOUSE,,Aritzia Report - Rewarehouse,0,cron,"list warehouses
-|
-[SELECT stoloc,
+USR_RPT_REWAREHOUSE,,Aritzia Report - Rewarehouse,0,cron,"[SELECT stoloc,
         aisle_id,
         item,
         year,
@@ -98,25 +96,4 @@ USR_RPT_REWAREHOUSE,,Aritzia Report - Rewarehouse,0,cron,"list warehouses
                                             ELSE NULL END,
                                             CASE WHEN maxqvl <= 10240 THEN 'S'
                                                  WHEN maxqvl <= 13440 THEN 'M'
-                                                 WHEN maxqvl <= 21120 THEN 'L'
-                                                 WHEN maxqvl <= 42240 THEN 'XL'
-                                                 WHEN maxqvl <= 63360 THEN 'HP'
-                                                 WHEN maxqvl > 63360 THEN 'FP' END,
-                                                 CASE WHEN iv.invsts = 'AVL' THEN iv.untqty
-                                                      ELSE 0
-                                                 END) a) b
-                                 ORDER by stoloc] catch(@?) >> res
-                           |
-                           if (@? = 0)
-                           {
-                               expand environment variable
-                                where name = '$' || @wh_id || 'outputs' || '\Working Files\'
-                               |
-                               publish data
-                                where path = @value
-                               |
-                               write csv file
-                                where resdata = @res
-                                  and filnam = 'rewarehouse-' || to_char(sysdate, 'YYYYMMDD-hh24mi') || '.csv'
-                                  and path = @path
-                           }",$LESDIR/log/usr_rpt_rewarehouse.log,,0,"0 0 4,14 ? * * *",60,,usr_data
+                               ",$LESDIR/log/usr_rpt_rewarehouse.log,,0,"0 0 4,14 ? * * *",60,,usr_data

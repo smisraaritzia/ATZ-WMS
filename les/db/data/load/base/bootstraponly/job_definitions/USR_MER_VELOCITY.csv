@@ -1,7 +1,5 @@
 job_id,role_id,name,enabled,type,command,log_file,trace_level,overlap,schedule,start_delay,timer,grp_nam
-USR_MER_VELOCITY,,Aritzia Manual ER Velocity Report,0,cron,"list warehouses
-|
-[select a.prtnum,
+USR_MER_VELOCITY,,Aritzia Manual ER Velocity Report,0,cron,"[select a.prtnum,
         season_yr,
         season,
         merch_catg,
@@ -97,61 +95,4 @@ USR_MER_VELOCITY,,Aritzia Manual ER Velocity Report,0,cron,"list warehouses
              ON d.prtnum = a.prtnum
            LEFT
            JOIN (select prtnum,
-                        SUM(shpqty) velocity_qty
-                   FROm shipment_line
-                  WHERE (schbat LIKE '% E %' OR schbat LIKE '%IC %' OR schbat LIKE '%REP%')
-                    AND shpqty <> 0
-                  GROUP BY prtnum) f
-             ON f.prtnum = a.prtnum
-          WHERE b.arecod in ('PICK', 'RESV', 'ELRV')
-            AND a.invsts = 'AVL'
-            AND c.merch_catg <> 'Gift Item'
-          GROUP BY a.prtnum,
-                c.merch_catg,
-                c.style_en,
-                d1.lngdsc,
-                d2.lngdsc,
-                d.inb_qty,
-                c.season_yr,
-                c.season,
-                f.velocity_qty) a
-   LEFT
-   JOIN (SELECT distinct (prtnum),
-                stoloc
-           FROM invsum
-          WHERE stoloc IN (SELECT stoloc
-                             FROM locmst
-                            WHERE asgflg = 1)) b
-     ON b.prtnum = a.prtnum
-   LEFT
-   JOIN (SELECT stoloc,
-                maxqvl
-           FROM locmst
-          WHERE asgflg = 1) c
-     ON c.stoloc = b.stoloc
-   LEFT
-   JOIN (SELECT prtnum,
-                count(a.stoloc) AS loc_count
-           FROM inventory_view a
-          INNER
-           JOIN locmst b
-             ON b.stoloc = a.stoloc
-          WHERE b.arecod = 'PICK'
-          GROUP BY prtnum) d
-     ON d.prtnum = a.prtnum
-  ORDER BY restock_rate desc,
-        days_rem asc] catch(@?) >> res
-|
-if (@? = 0)
-{
-    expand environment variable
-     where name = '$' || @wh_id || 'outputs' || '\Inventory Velocity\'
-    |
-    publish data
-     where path = @value
-    |
-    write csv file
-     where resdata = @res
-       and filnam = 'inv_mer_velocity_' || to_char(sysdate, 'YYYYMMDD-HH24MISS') || '.csv'
-       and path = @path
-}",$LESDIR/log/usr_mer_velocity.log,,0,"0 0 10,14,18 ? * * *",60,,usr_data
+       ",$LESDIR/log/usr_mer_velocity.log,,0,"0 0 10,14,18 ? * * *",60,,usr_data

@@ -1,5 +1,5 @@
 job_id,role_id,name,enabled,type,command,log_file,trace_level,overlap,schedule,start_delay,timer,grp_nam
-USR_OPN_IS_ALERT,,Aritzia Open Inbound Shipment Alert,0,cron,"list warehouses
+USR_OPN_IS_ALERT,,Aritzia Open Inbound Shipment Alert,0,cron,"get _warehouse id
 |
 [select trknum,
         expclose
@@ -39,7 +39,7 @@ if (@? = 0)
        and trknum = @result_string
     |
     expand environment variable
-     where name = '$' || @wh_id || 'outputs '
+     where name = ' $' || @wh_id || 'outputs '
     |
     [select case when charindex(' DEV ', @value) > 0 then ' BY DEV '
                  when charindex(' TST ', @value) > 0 then ' BY QA '
@@ -48,11 +48,11 @@ if (@? = 0)
        from dual]
     |
     send email
-     where subject = 'Inbound Shipments Still Open - ' || @envdsc
+     where subject = ' Inbound Shipments Still Open - ' || @envdsc
        and hostname = @hostname
        and mail_from = @mail_from
        and send_to = @send_to_list
-       and message = 'The following Inbound Shipments are still open: ' || @trknum catch(@?)
+       and message = ' The following Inbound Shipments are still open: ' || @trknum catch(@?)
 }
 else if (@? <> -1403)
 {
@@ -69,30 +69,30 @@ else if (@? <> -1403)
            and separator = ', '
         |
         publish data
-         where hostname = 'azeus2smtp.jdadelivers.com'
-           and mail_from = 'ITWMS-' || @wh_id || 'Alerts @jdadelivers.com'
-           and send_to_list = 'hsato@aritzia.com;
-        chtang@aritzia.com;
-        cumali@aritzia.com;
-        ege@aritzia.com;
-        eComInOrderExpeditor@aritzia.com;
-        supplychaintechteam@aritzia.com'
+         where hostname = ' azeus2smtp.jdadelivers.com '
+           and mail_from = ' ITWMS - ' || @wh_id || 'Alerts @jdadelivers.com '
+           and send_to_list = ' hsato @aritzia.com;
+        chtang @aritzia.com;
+        cumali @aritzia.com;
+        ege @aritzia.com;
+        eComInOrderExpeditor @aritzia.com;
+        supplychaintechteam @aritzia.com '
            and trknum = @result_string
         |
         expand environment variable
-         where name = ' $' || @wh_id || 'outputs' 
+         where name = ' $'$' || @wh_id || 'outputs' '
         |
-        [select case when charindex('DEV', @value) > 0 then 'BY DEV'
-                     when charindex('TST', @value) > 0 then 'BY QA'
-                     else 'BY PROD'
+        [select case when charindex(' DEV ', @value) > 0 then ' BY DEV '
+                     when charindex(' TST ', @value) > 0 then ' BY QA '
+                     else ' BY PROD '
                 end envdsc
            from dual]
         |
         send email
-         where subject = 'Inbound Shipments Still Open - ' || !@envdsc
+         where subject = ' Inbound Shipments Still Open - ' || !@envdsc
            and hostname = @hostname
            and mail_from = @mail_from
            and send_to = @send_to_list
-           and message = 'The following Inbound Shipments are still open: ' || @trknum catch(@?)
+           and message = ' The following Inbound Shipments are still open: ' || @trknum catch(@?)
     }
 }",$LESDIR/log/usr_opn_is_alert.log,,0,"0 30 14 ? * * *",,,usr_data

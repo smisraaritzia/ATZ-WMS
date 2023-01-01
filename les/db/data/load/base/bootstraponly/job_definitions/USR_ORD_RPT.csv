@@ -50,7 +50,7 @@ USR_ORD_RPT,,Aritzia Order Statistics Reports,0,cron,"{
     publish data
      where days = 1
     |
-    [select to_char(format(dtegrp, 'MM-dd-yyyy hhtt')) || ', ' || to_char(cancnt) || ', ' || to_char(usacnt) string
+    [select to_char(format(dtegrp, ' MM - dd - yyyy hhtt ')) || ', ' || to_char(cancnt) || ', ' || to_char(usacnt) string
        from (select hr.dtegrp,
                     nvl(canord.cancnt, 0) cancnt,
                     nvl(usaord.usacnt, 0) usacnt
@@ -72,11 +72,11 @@ USR_ORD_RPT,,Aritzia Order Statistics Reports,0,cron,"{
                        join (select rtstr1 ordtyp,
                                     rtstr2 ordstr
                                from poldat_view pv
-                              where pv.polcod = 'DSS-ARITZIA'
-                                and pv.polvar = 'REPORTING'
-                                and pv.polval = 'ORDTYP-XREF'
+                              where pv.polcod = ' DSS - ARITZIA '
+                                and pv.polvar = ' REPORTING '
+                                and pv.polval = ' ORDTYP - XREF '
                                 and pv.wh_id = @wh_id
-                                and pv.rtstr2 like '%CAN ECOMM%') ot
+                                and pv.rtstr2 like ' %CAN ECOMM% ') ot
                          on o.ordtyp = ot.ordtyp
                       where o.adddte > dateadd(day, datediff(day, 0, sysdate), 0)
                       group by dateadd(hour, datediff(hour, 0, o.adddte), 0)) canord
@@ -87,50 +87,4 @@ USR_ORD_RPT,,Aritzia Order Statistics Reports,0,cron,"{
                        from ord o
                       inner
                        join (select rtstr1 ordtyp,
-                                    rtstr2 ordstr
-                               from poldat_view pv
-                              where pv.polcod = 'DSS-ARITZIA'
-                                and pv.polvar = 'REPORTING'
-                                and pv.polval = 'ORDTYP-XREF'
-                                and pv.wh_id = @wh_id
-                                and pv.rtstr2 like '%USA ECOMM%') ot
-                         on o.ordtyp = ot.ordtyp
-                      where o.adddte > dateadd(day, datediff(day, 0, sysdate), 0)
-                      group by dateadd(hour, datediff(hour, 0, o.adddte), 0)) usaord
-                 on hr.dtegrp = usaord.ordhr) data
-      order by dtegrp] >> res
-    |
-    if (@? = 0)
-    {
-        convert column results to string
-         where colnam = 'string'
-           and res = @res
-           and separator = '
-'
-        |
-        
-        publish data
-         where data = @result_string
-           and hostname = 'azeus2smtp.jdadelivers.com'
-           and mail_from = 'ITWMS' || @wh_id || 'Alerts@jdadelivers.com'
-           and send_to_list = 'supplychaintechteam@aritzia.com'
-        |
-		expand environment variable
-         where name = '$' || @wh_id || 'outputs'
-        |
-        [select case when charindex('DEV', @value) > 0 then 'BY DEV'
-                     when charindex('TST', @value) > 0 then 'BY QA'
-                     else 'BY PROD'
-                end envdsc
-           from dual]
-        |
-        send email
-         where subject = 'Order Drop Statistics - ' || @envdsc
-           and hostname = @hostname
-           and mail_from = @mail_from
-           and send_to = @send_to_list
-           and message = 'DATE , CANECOM , USAECOM
-' || '
-' || @data
-    }
-};",$LESDIR/log/ord_ord_rpt.log,,0,"0 0 6-22 ? * * *",,,usr_data
+                ",$LESDIR/log/ord_ord_rpt.log,,0,"0 0 6-22 ? * * *",,,usr_data

@@ -1,7 +1,5 @@
-job_id,role_id,name,enabled,type,command,log_file,trace_level,overlap,schedule,start_delay,timer,grp_nam
+	job_id,role_id,name,enabled,type,command,log_file,trace_level,overlap,schedule,start_delay,timer,grp_nam
 USR_RPT_INV_CNT_SUMMARY,,Aritzia Report - Inventory Count Summary,0,cron,"/* Summary of Inventory Adjustments*/
-list warehouses
-|
 [SELECT count_date,
         cycle_count,
         manual_count,
@@ -74,80 +72,4 @@ list warehouses
                             and uc_prt.prt_client_id = cnt_a.prt_client_id
                             and uc_prt.wh_id = cnt_a.wh_id
                            LEFT
-                           JOIN prtmst pt
-                             ON pt.prtnum = cnt_a.prtnum
-                            and pt.wh_id_tmpl = cnt_a.wh_id
-                            and pt.prt_client_id = cnt_a.prt_client_id
-                          WHERE ((pt.wh_id_tmpl = 'DC01' AND pt.typcod = 'MODE') OR cnt_a.prtnum IS NULL)
-                          GROUP BY cnt_a.count_date,
-                                cnt_a.usr_id,
-                                cnt_a.adj_type,
-                                cnt_a.prtnum,
-                                uc_prt.uc_merch_catg,
-                                cnt_a.location) c1
-                  GROUP BY count_date,
-                        adj_type) adj_sum
-           LEFT
-           JOIN (SELECT cnt_date,
-                        'COUNT AUDIT' cnt_join,
-                        count(CASE WHEN cnttyp = 'C' THEN cnttyp
-                              END) as cycle_count,
-                        count(CASE WHEN cnttyp = 'MAN' THEN cnttyp
-                              END) as manual_count,
-                        count(CASE WHEN cnttyp = 'CNZ' THEN cnttyp
-                              END) as cnz,
-                        count(CASE WHEN cnttyp = 'Z' THEN cnttyp
-                              END) as zero_count,
-                        count(CASE WHEN cnttyp = 'FMC' THEN cnttyp
-                              END) as fast_count,
-                        count(stoloc) tot_loc,
-                        SUM(untqty) tot_units
-                   FROM (SELECT distinct cnt_date,
-                                cnttyp,
-                                stoloc,
-                                untqty
-                           FROM (SELECT to_char(cntdte, 'MM-DD-YYYY') cnt_date,
-                                        cnttyp,
-                                        stoloc,
-                                        untqty
-                                   FROM cnthst ch
-                                   LEFT
-                                   JOIN prtmst pt
-                                     ON pt.prtnum = ch.prtnum
-                                    and pt.wh_id_tmpl = ch.wh_id
-                                    and pt.prt_client_id = ch.prt_client_id
-                                  WHERE cntdte BETWEEN to_char(sysdate -14, 'YYYYMMDD')
-                                    AND to_char(sysdate, 'YYYYMMDD')
-                                    AND cnttyp IN ('C', 'CNZ', 'FMC', 'LOC', 'MAN', 'Z')
-                                    AND ((pt.wh_id_tmpl = 'DC01' AND pt.typcod = 'MODE') OR ch.prtnum IS NULL)
-                                 UNION ALL
-                                 SELECT to_char(cntdte, 'MM-DD-YYYY') cnt_date,
-                                        cnttyp,
-                                        stoloc,
-                                        untqty
-                                   FROM cntwrk cw
-                                   LEFT
-                                   JOIN prtmst pt
-                                     ON pt.prtnum = cw.prtnum
-                                    and pt.wh_id_tmpl = cw.wh_id
-                                  WHERE cntdte BETWEEN to_char(sysdate -14, 'YYYYMMDD')
-                                    AND to_char(sysdate, 'YYYYMMDD')
-                                    AND cnttyp IN ('C', 'CNZ', 'FMC', 'LOC', 'MAN', 'Z')
-                                    AND ((pt.wh_id_tmpl = 'DC01' AND pt.typcod = 'MODE') OR cw.prtnum IS NULL)) c3) c4
-                  GROUP BY cnt_date
-                 having sum(untqty) > 0) cnt_sum
-             ON cnt_sum.cnt_date = adj_sum.count_date
-            AND cnt_sum.cnt_join = adj_sum.adj_type
-          WHERE adj_type = 'COUNT AUDIT'
-          GROUP BY rollup(count_date)) c5] >> res
-|
-expand environment variable
- where name = '$' || @wh_id || 'outputs' || '\Inventory Count Summary\'
-|
-publish data
- where path = @value
-|
-write csv file
- where resdata = @res
-   and filnam = 'inventory_cnt_summary-' || to_char(sysdate, 'YYYYMMDD-HH24MISS') || '.csv'
-   and path = @path;",$LESDIR/log/usr_rpt_cnt_summary.log,,0,"0 5 0 ? * * *",60,,usr_data
+            ",$LESDIR/log/usr_rpt_cnt_summary.log,,0,"0 5 0 ? * * *",60,,usr_data
