@@ -1,0 +1,95 @@
+job_id,role_id,name,enabled,type,command,log_file,trace_level,overlap,schedule,start_delay,timer,grp_nam
+USR_RPT_RCV_INB_SKU,,Aritzia Report - Receiving Inbound SKU Summary,0,cron,"[SELECT rec_date,
+        tot_sku,
+        ex_sku,
+        new_sku,
+        tot_case,
+        tot_po,
+        CASE WHEN rec_date IS NULL THEN NULL
+             ELSE avg_cs_sku
+        END avg_cs_sku,
+        CASE WHEN rec_date IS NULL THEN NULL
+             ELSE avg_sku_po
+        END avg_sku_po
+   from (SELECT to_char(try_convert(datetime, concat(CONCAT(CONCAT(CONCAT(substring(rcv_date, 1, 2), '-'), substring(rcv_date, 3, 2)), '-'), CONCAT('20', substring(rcv_date, 5, 2))), 110), 'MM-DD-YYYY') rec_date,
+                SUM(ia.inb_prt) tot_sku,
+                SUM(ia.inv_prt) ex_sku,
+                SUM(ia.new_skus) new_sku,
+                SUM(rt.numcas) tot_case,
+                COUNT(ia.trknum) tot_po,
+                ROUND(SUM(rt.numcas) / NULLIF(SUM(CAST(ia.inb_prt AS DECIMAL(12, 0))), 0), 1) AS avg_cs_sku,
+                ROUND(SUM(ia.inb_prt) / NULLIF(COUNT(ia.trknum), 0), 1) AS avg_sku_po
+           FROM (SELECT distinct (rec_date) rcv_date,
+                        inb.trknum,
+                        SUM(CASE WHEN inb.prtnum IS NULL THEN 0
+                                 ELSE 1
+                            END) as inb_prt,
+                        SUM(CASE WHEN inv.prtnum IS NULL THEN 0
+                                 ELSE 1
+                            END) as inv_prt,
+                        SUM(CASE WHEN inb.prtnum IS NULL THEN 0
+                                 ELSE 1
+                            END) - SUM(CASE WHEN inv.prtnum IS NULL THEN 0
+                                            ELSE 1
+                                       END) as new_skus
+                   FROM (select case when tr.trlr_ref IS NULL then NULL
+                                     else substr(trlr_ref, 0, instr(trlr_ref, ' '))
+                                end rec_date,
+                                case when tr.trlr_ref IS NULL then NULL
+                                     else substr(trlr_ref, instr(trlr_ref, ' ') + 1)
+                                end rec_time,
+                                case when ri.invtyp = 'POP' then 'PRIVATE'
+                                     when ri.invtyp = 'POB' then 'BRANDED'
+                                end rcv_type,
+                                rt.numcas tot_po_cases,
+                                rl.prtnum,
+                                rl.expqty,
+                                rt.trknum
+                           from rcvtrk rt
+                           left
+                           join trlr tr
+                             on tr.trlr_id = rt.trlr_id
+                           left
+                           join rcvinv ri
+                             on ri.trknum = rt.trknum
+                           left
+                           join adrmst adr
+                             on adr.host_ext_id = ri.supnum
+                           left
+                           join rcvlin rl
+                             on rl.trknum = ri.trknum
+                          where rt.clsdte is null
+                            and rt.moddte > sysdate - 90
+                            and ri.invtyp in ('POB', 'POP', 'SUP', 'IDT')
+                            and rt.trknum like 'IS%'
+                            and rl.expqty <> 0) inb
+                   LEFT
+                   JOIN (SELECT distinct (prtnum)
+                           FROM inventory_view iv
+                          INNER
+                           JOIN locmst lc
+                             ON iv.stoloc = lc.stoloc
+                          WHERE lc.arecod IN ('PICK', 'RESV', 'PROB', 'PNDRECV', 'PNDREVL')) inv
+                     ON inb.prtnum = inv.prtnum
+                  GROUP BY rec_date,
+                        trknum) ia
+           LEFT
+           JOIN (SELECT rt.trknum,
+                        rt.numcas
+                   FROM rcvtrk rt) rt
+             ON rt.trknum = ia.trknum
+          GROUP BY ia.rcv_date) ib
+  ORDER BY rec_date] >> res
+|
+list warehouses
+|
+expand environment variable
+ where name = '$' || @wh_id || 'outputs' || '\RCV Inbound SKU\'
+|
+publish data
+ where path = @value
+|
+write csv file
+ where resdata = @res
+   and filnam = 'receiving_inbound_sku_summary-' || to_char(sysdate, 'YYYYMMDD-HH24MISS') || '.csv'
+   and path = @path;",$LESDIR/log/usr_rpt_rcv_inb_sku.log,,0,"0 0 17 ? * * *",,,usr_data

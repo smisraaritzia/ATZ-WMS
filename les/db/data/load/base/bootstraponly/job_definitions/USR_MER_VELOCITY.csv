@@ -1,0 +1,157 @@
+job_id,role_id,name,enabled,type,command,log_file,trace_level,overlap,schedule,start_delay,timer,grp_nam
+USR_MER_VELOCITY,,Aritzia Manual ER Velocity Report,0,cron,"list warehouses
+|
+[select a.prtnum,
+        season_yr,
+        season,
+        merch_catg,
+        style_en,
+        color,
+        sz,
+        unit_per_case,
+        resv_cases,
+        pick_qty,
+        resv_qty,
+        inb_qty,
+        coalesce(pick_qty, 0) + coalesce(resv_qty, 0) + coalesce(inb_qty, 0) as total_qty,
+        velocity_qty,
+        ROUND(velocity_qty * 1.0 / decode(unit_per_case, 0, 1, unit_per_case), 1) restock_rate,
+        CASE WHEN unit_per_case is not null THEN ROUND(pick_qty * 1.0 / decode((velocity_qty * 1.0 / 14), 0, 1, (velocity_qty * 1.0 / 14)), 1)
+        END AS days_rem,
+        b.stoloc AS assign_loc,
+        CASE WHEN maxqvl >= 92000 THEN 'BULK'
+             WHEN maxqvl >= 14000 THEN 'XL'
+             WHEN maxqvl >= 6400 THEN 'M'
+             WHEN maxqvl >= 3500 THEN 'S'
+             WHEN maxqvl >= 1500 THEN 'XS'
+        END AS bin_type,
+        d.loc_count
+   from (SELECT a.prtnum,
+                c.season_yr,
+                c.season,
+                c.merch_catg,
+                c.style_en,
+                d1.lngdsc sz,
+                d2.lngdsc color,
+                ROUND(SUM(CASE WHEN b.arecod = 'RESV' THEN untqty
+                          END) * 1.0 / count(CASE WHEN b.arecod = 'RESV' THEN untqty
+                                       END), 0) AS unit_per_case,
+                count(CASE WHEN b.arecod = 'RESV' THEN untqty
+                      END) as resv_cases,
+                SUM(CASE WHEN b.arecod = 'PICK' THEN untqty
+                    END) as pick_qty,
+                SUM(CASE WHEN b.arecod = 'RESV' THEN untqty
+                    END) as resv_qty,
+                d.inb_qty,
+                f.velocity_qty
+           from inventory_view a
+          INNER
+           JOIN locmst b
+             ON b.stoloc = a.stoloc
+          INNER
+           JOIN dss_prtmst c
+             ON c.prtnum = a.prtnum
+            and c.prt_client_id = a.prt_client_id
+            and c.wh_id = a.wh_id
+          inner
+           join prtdsc pd
+             on pd.colnam = 'prtnum|prt_client_id|wh_id_tmpl'
+            and pd.colval = /*=varchar(*/ nvl(a.prtnum, rtrim(' ')) || '|' || nvl(a.prt_client_id, rtrim(' ')) || '|' || nvl(a.wh_id, rtrim(' ')) /*=)*/
+		inner join prtmst pm 
+		         ON pm.prtnum = a.prtnum
+            and pm.prt_client_id = a.prt_client_id
+            and pm.wh_id_tmpl = a.wh_id
+			inner join dscmst d1 
+			on d1.colnam = 'prtsize'
+			and d1.locale_id = 'US_ENGLISH'
+			and  d1.colval = pm.prtsize
+			inner join dscmst d2
+			on d2.colnam = 'prtcolor'
+			and d2.locale_id = 'US_ENGLISH'
+			and  d2.colval = pm.prtcolor
+           LEFT
+           JOIN (SELECT prtnum,
+                        inb_qty
+                   FROM (SELECT a.prtnum,
+                                SUM(expqty) - SUM(idnqty) inb_qty
+                           FROM rimlin a
+                          INNER
+                           JOIN rimhdr b
+                             ON b.invnum = a.invnum
+                            and b.supnum = a.supnum
+                            and b.wh_id = a.wh_id
+                            and b.client_id = a.client_id
+                          WHERE b.invtyp = 'POP'
+                            AND a.prtnum IN (SELECT distinct (a.prtnum)
+                                               FROM inventory_view a
+                                              INNER
+                                               JOIN locmst b
+                                                 ON b.stoloc = a.stoloc
+                                              INNER
+                                               JOIN dss_prtmst c
+                                                 ON c.prtnum = a.prtnum
+                                              WHERE b.arecod in ('PICK', 'RESV', 'PNDPICK')
+                                                AND a.invsts = 'AVL')
+                          GROUP BY a.prtnum) a
+                  WHERE inb_qty > 0) d
+             ON d.prtnum = a.prtnum
+           LEFT
+           JOIN (select prtnum,
+                        SUM(shpqty) velocity_qty
+                   FROm shipment_line
+                  WHERE (schbat LIKE '% E %' OR schbat LIKE '%IC %' OR schbat LIKE '%REP%')
+                    AND shpqty <> 0
+                  GROUP BY prtnum) f
+             ON f.prtnum = a.prtnum
+          WHERE b.arecod in ('PICK', 'RESV', 'ELRV')
+            AND a.invsts = 'AVL'
+            AND c.merch_catg <> 'Gift Item'
+          GROUP BY a.prtnum,
+                c.merch_catg,
+                c.style_en,
+                d1.lngdsc,
+                d2.lngdsc,
+                d.inb_qty,
+                c.season_yr,
+                c.season,
+                f.velocity_qty) a
+   LEFT
+   JOIN (SELECT distinct (prtnum),
+                stoloc
+           FROM invsum
+          WHERE stoloc IN (SELECT stoloc
+                             FROM locmst
+                            WHERE asgflg = 1)) b
+     ON b.prtnum = a.prtnum
+   LEFT
+   JOIN (SELECT stoloc,
+                maxqvl
+           FROM locmst
+          WHERE asgflg = 1) c
+     ON c.stoloc = b.stoloc
+   LEFT
+   JOIN (SELECT prtnum,
+                count(a.stoloc) AS loc_count
+           FROM inventory_view a
+          INNER
+           JOIN locmst b
+             ON b.stoloc = a.stoloc
+          WHERE b.arecod = 'PICK'
+          GROUP BY prtnum) d
+     ON d.prtnum = a.prtnum
+  ORDER BY restock_rate desc,
+        days_rem asc] catch(@?) >> res
+|
+if (@? = 0)
+{
+    expand environment variable
+     where name = '$' || @wh_id || 'outputs' || '\Inventory Velocity\'
+    |
+    publish data
+     where path = @value
+    |
+    write csv file
+     where resdata = @res
+       and filnam = 'inv_mer_velocity_' || to_char(sysdate, 'YYYYMMDD-HH24MISS') || '.csv'
+       and path = @path
+}",$LESDIR/log/usr_mer_velocity.log,,0,"0 0 10,14,18 ? * * *",60,,usr_data
