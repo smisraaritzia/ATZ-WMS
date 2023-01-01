@@ -1,5 +1,7 @@
 job_id,role_id,name,enabled,type,command,log_file,trace_level,overlap,schedule,start_delay,timer,grp_nam
-USR_RPT_PCK_REWAREHOUSING,,Aritzia Report - Pick Rewarehousing,0,cron,"[SELECT variant,
+USR_RPT_PCK_REWAREHOUSING,,Aritzia Report - Pick Rewarehousing,0,cron,"list warehouses
+|
+[SELECT variant,
         merch_catg,
         season,
         season_yr,
@@ -109,4 +111,99 @@ USR_RPT_PCK_REWAREHOUSING,,Aritzia Report - Pick Rewarehousing,0,cron,"[SELECT v
                            FROM inventory_view iv
                            LEFT
                            JOIN locmst lc
-    ",$LESDIR/log/usr_rpt_pckrewarhousing.log,,0,"0 50 7,13,17 ? * * *",60,,usr_data
+                                                        ON lc.stoloc = iv.stoloc
+                           LEFT
+                           JOIN prtftp_view pfv
+                             ON pfv.prtnum = iv.prtnum
+                          WHERE iv.invsts = 'AVL'
+                            AND lc.arecod in ('PICK', 'RESV', 'ELRV')
+                            AND pfv.defftp_flg = 1
+                            AND pfv.wh_id = 'DC01'
+                          GROUP BY iv.prtnum,
+                                (pfv.unthgt*pfv.untlen*pfv.untwid),
+                                (pfv.cashgt*pfv.caslen*pfv.caswid)) ivb
+                   FULL OUTER
+                   JOIN (SELECT ab.prtnum,
+                                ab.rec_qty,
+                                ab.returns_qty,
+                                ab.dc_qty
+                           FROM (SELECT rl.prtnum,
+                                        upt.merch_catg,
+                                        upt.season_yr,
+                                        upt.season,
+                                        SUM(CASE WHEN rh.invtyp IN ('PO', 'POB', 'POP') AND adddte > to_char(sysdate - 365, 'YYYYMMDD') THEN rl.expqty
+                                                 ELSE 0
+                                            END) as rec_qty,
+                                        SUM(CASE WHEN rh.invtyp IN ('MP', 'SR', 'ZERE', 'ZB') AND adddte > to_char(sysdate - 60, 'YYYYMMDD') THEN rl.expqty
+                                                 ELSE 0
+                                            END) as returns_qty,
+                                        SUM(CASE WHEN rh.invtyp IN ('IDT') AND adddte > to_char(sysdate - 60, 'YYYYMMDD') THEN rl.expqty
+                                                 ELSE 0
+                                            END) as dc_qty
+                                   FROM rimlin rl
+                                   LEFT
+                                   JOIN rimhdr rh
+                                     ON rh.invnum = rl.invnum
+                                   LEFT
+                                   JOIN dss_prtmst upt
+                                     ON upt.prtnum = rl.prtnum
+                                  WHERE rl.idnqty = 0
+                                    AND rl.expqty > 0
+                                    AND rh.adddte > to_char(sysdate - 365, 'YYYYMMDD')
+                                    AND upt.season_yr >= '2021'
+                                  GROUP BY rl.prtnum,
+                                        upt.merch_catg,
+                                        upt.season_yr,
+                                        upt.season) ab
+                          WHERE (rec_qty + returns_qty + dc_qty) <> 0) inb
+                     ON inb.prtnum = ivb.prtnum) dc
+           LEFT
+           JOIN (SELECT ol.prtnum,
+                        SUM(ol.ordqty) ecom_vel
+                   FROM ord_line ol
+                   LEFT
+                   JOIN ord o
+                     ON o.ordnum = ol.ordnum
+                   LEFT
+                   JOIN poldat pd
+                     ON pd.rtstr1 = o.ordtyp
+                  WHERE ol.non_alc_flg = 0
+                    AND pd.polval = 'ORDTYP-XREF'
+                    AND pd.rtstr2 IN ('USA ORDER DELIVERY', 'CAN ECOMM', 'CAN ORDER DELIVERY', 'USA ECOMM')
+                  GROUP BY ol.prtnum) vel
+             ON vel.prtnum = dc.variant
+           LEFT
+           JOIN dss_prtmst upt
+             ON upt.prtnum = dc.variant) rw
+  INNER
+   JOIN inventory_view iv
+     ON iv.prtnum = rw.variant
+  INNER
+   JOIN locmst lc
+     ON lc.stoloc = iv.stoloc
+   LEFT
+   JOIN (SELECT srcloc,
+                comqty
+           FROM com_inv_sum_view
+          WHERE comqty > 0) civ
+     ON civ.srcloc = iv.stoloc
+   LEFT
+   JOIN (SELECT stoloc,
+                pndqty
+           FROM invloc_view
+          WHERE pndqty > 0
+            AND arecod = 'PICK') piv
+     ON piv.stoloc = iv.stoloc
+  WHERE iv.invsts = 'AVL'
+    and lc.arecod IN ('PICK')] >> res
+|
+expand environment variable
+ where name = '$' || @wh_id || 'outputs' || '\Inventory Rewarehousing\'
+|
+publish data
+ where path = @value
+|
+write csv file
+ where resdata = @res
+   and filnam = 'pck_rewarehousing-' || to_char(sysdate, 'YYYYMMDD-HH24MISS') || '.csv'
+   and path = @path",$LESDIR/log/usr_rpt_pckrewarhousing.log,,0,"0 50 7,13,17 ? * * *",60,,usr_data
