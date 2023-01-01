@@ -1,3 +1,4 @@
+job_id,role_id,name,enabled,type,command,log_file,trace_level,overlap,schedule,start_delay,timer,grp_nam
 USR_ER_ESCALATION,,Aritzia ER Escalation,0,cron,"list warehouses
 |
 [select DATEADD(d, -1, DATEDIFF(d, 0, sysdate)) + (0.0 / 24) dte1,
