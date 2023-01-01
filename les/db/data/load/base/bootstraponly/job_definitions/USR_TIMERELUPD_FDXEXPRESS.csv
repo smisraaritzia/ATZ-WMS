@@ -1,0 +1,57 @@
+job_id,role_id,name,enabled,type,command,log_file,trace_level,overlap,schedule,start_delay,timer,grp_nam
+USR_TIMERELUPD_FDXEXPRESS,,Aritzia Time Release Update Fedex Express,0,cron,"list warehouses
+|
+[select format(convert(date, sysdate -14), 'yyyyMMddHHmmss') startdte,
+        format(DATEADD(ms, -3, DATEADD(day, DATEDIFF(day, 0, sysdate) + 1, 0)), 'yyyyMMddHHmmss') enddte
+   from dual]
+|
+list dss time release mass update
+ where carcod = 'FDXAIRCAN'
+   and shpsts [ in ('R' , 'I' )]
+   and early_shpdte [between to_date(@startdte ) and to_date(@enddte )]
+   and wh_id = @wh_id
+   and srvlvl [ not in (' 3DAIR8P ' ,' 3DAIR8PL1 ' )]
+   and mancnt is null
+   and ordtyp [not in (' C01 ' ,' C03 ' ,' C05 ' ,' C07 ' ,' F01 ' ,' F03 ' ,' F05 ' ,' F07 ' )]
+|
+[select ship_id,
+        count(distinct traknm) mancnt2
+   from manfst
+  where ordnum = @ordnum
+    and carcod = @carcod
+    and srvlvl = @srvlvl
+    and ship_id = @ship_id
+    and srvlvl <> ' RETURN '
+  group by ship_id] catch(-1403)
+|
+if (@mancnt2 is null)
+{
+    /* Change this depending on pick up schedule for days to advance */
+    [select case when datepart(dw, sysdate) = 6 then 1
+                 when datepart(dw, sysdate) = 7 then 1
+                 else 1
+            end dtemov
+       from dual]
+    |
+    [select format(convert(date, sysdate + @dtemov), ' yyyyMMdd ') newshp,
+            @early_shpdte oldshp,
+            @early_dlvdte olddlv
+       from dual]
+    |
+    process dss time release mass update manifest date
+     where early_shpdte = to_date(@newshp)
+       and early_dlvdte = to_date(@newshp)
+       and carcod = @carcod
+       and ordnum = @ordnum
+       and ship_id = @ship_id
+       and srvlvl = @srvlvl
+    |
+    write output file
+     where filnam = ' timerel_update.log '
+       and data = sysdate || ', ' || @ship_id || ', ' || @ordnum || ', ' || @schbat || ', ' || @carcod || ', ' || @srvlvl || ', ' || @ordtyp || ', ' || @oldshp || ', ' || @olddlv || ', ' || to_date(@newshp)
+       and newline = ' Y '
+       and mode = ' A '
+       and path = ' $LESDIR / log '
+    |
+    commit;
+}",$LESDIR/log/usr_timerelupd_fdxexpress.log,,0,"5 30 15 26-29 12 ? 2021",,,usr_data

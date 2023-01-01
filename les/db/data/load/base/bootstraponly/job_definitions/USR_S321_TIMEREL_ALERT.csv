@@ -1,0 +1,40 @@
+job_id,role_id,name,enabled,type,command,log_file,trace_level,overlap,schedule,start_delay,timer,grp_nam
+USR_S321_TIMEREL_ALERT,,Aritzia S321 Time Release Alert,0,cron,"[select distinct schbat
+   from shipment s
+  inner
+   join shipment_line sl
+     on s.ship_id = sl.ship_id
+  inner
+   join ord o
+     on sl.ordnum = o.ordnum
+  where s.early_shpdte is null
+    and s.shpsts <> 'B'
+    and s.shpsts <> 'R'
+    and o.ordtyp in ('E05', 'E07', 'G05', 'G07', 'R05', 'R07', 'S05', 'S07', 'P05', 'P07', 'I05', 'I07')] catch(@?) >> res
+|
+if (@? = 0)
+{
+    convert column results to string
+     where resultset = @res
+       and colnam = 'schbat'
+       and separator = ' || '
+    |
+    list warehouses
+    |
+    publish data
+     where hostname = 'azeus2smtp.jdadelivers.com'
+       and mail_from = 'ITWMS-' || @wh_id || 'Alerts @jdadelivers.com '
+       and send_to_list = ' dcsupervisors @aritzia.com;
+    dcteamleaders @aritzia.com;
+    supplychaintechteam @aritzia.com;
+    alovey @aritzia.com;
+    CA_DCitemchecks @aritzia.com '
+       and schbat = @result_string
+    |
+    send email
+     where subject = ' US eCommerce Wave(s) Ship Date Not Set '
+       and hostname = @hostname
+       and mail_from = @mail_from
+       and send_to = @send_to_list
+       and message = ' US eCommerce Wave(s) Ship Date Not Set Please set the ship date for the following wave(s) : ' || '' || @schbat catch(@?)
+}",$LESDIR/log/usr_s321_timerel.log,,0,"0 0/15 6-23 ? * * *",,,usr_data

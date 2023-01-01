@@ -1,0 +1,51 @@
+job_id,role_id,name,enabled,type,command,log_file,trace_level,overlap,schedule,start_delay,timer,grp_nam
+USR_PCL_TRACKNM,,Aritzia Tracking Number Alert,0,cron,"{
+    [select 537906645407 - max(substr(traknm, 1, 11)) rem
+       from manfst
+      where carcod = 'FDXAIRCAN'
+        and mstdte > convert(date, sysdate)]
+    |
+    if (@rem < 50000 and @rem is not null)
+    {
+        list warehouses
+        |
+        publish data
+         where hostname = 'azeus2smtp.jdadelivers.com'
+           and mail_from = 'ITWMS-DC' || @wh_id || 'Alerts @jdadelivers.com '
+           and send_to_list = ' supplychaintechteam @aritzia.com '
+           and mancls = @result_string
+        |
+        send email
+         where subject = ' Fedex Tracking Number Range Alert '
+           and hostname = @hostname
+           and mail_from = @mail_from
+           and send_to = @send_to_list
+           and message = ' There are ' || @rem || ' tracking numbers remaining. Stage a future range
+            or update this alert with the new range(USR_PCL_TRACKNM) . ' catch(@?)
+    }
+};
+{
+    [select 363939500 - max(traknm) rem
+       from manfst
+      where carcod = ' TFORCE '
+        and mstdte > convert(date, sysdate)]
+    |
+    if (@rem < 50000 and @rem is not null)
+    {
+        list warehouses
+        |
+        publish data
+         where hostname = ' azeus2smtp.jdadelivers.com '
+           and mail_from = ' ITWMS - ' || @wh_id || 'Alerts @jdadelivers.com '
+           and send_to_list = ' supplychaintechteam @aritzia.com '
+           and mancls = @result_string
+        |
+        send email
+         where subject = ' TFORCE Tracking Number Range Alert '
+           and hostname = @hostname
+           and mail_from = @mail_from
+           and send_to = @send_to_list
+           and message = ' There are ' || @rem || ' tracking numbers remaining. Stage a future range
+            or update this alert with the new range(USR_PCL_TRACKNM) . ' catch(@?)
+    }
+};",$LESDIR/log/usr_pcl_traknm.log,,0,"0 0 6-23 ? * * *",,,usr_data
