@@ -18,55 +18,57 @@ USR_LOCAUD,,Aritzia Location Audit,0,cron,"{
            and wh_id = @wh_id catch(@?)
         |
         if (@? = 0)
-        {{
-    [select loc.arecod,
-            count(*)
-       from locmst loc
-      inner
-       join loc_typ lt
-         on loc.loc_typ_id = lt.loc_typ_id
-      where lt.fwiflg = 1
-      group by loc.arecod]
-    |
-    write output file
-     where filnam = 'locaud_error.log'
-       and data = sysdate || ',' || @arecod || ',' || '========================START========================'
-       and newline = 'Y'
-       and mode = 'A'
-       and path = '$LESDIR/log'
-    |
-    [/*#nolimit*/
-	select loc.stoloc,
-            loc.wh_id
-       from locmst loc
-      inner
-       join loc_typ lt
-         on loc.loc_typ_id = lt.loc_typ_id
-      where lt.fwiflg = 1
-        and loc.arecod = @arecod]
-    |
-    validate location
-     where stoloc = @stoloc
-       and wh_id = @wh_id catch(@?)
-    |
-    if (@action is not null  and @action != 'UNKNOWN')
-    {
-        execute server command
-         where cmd = @action catch(@?)
-        |
-        if (@? <> 0)
         {
-        write output file
-             where filnam = 'locaud_error.log'
-               and data = sysdate || ',' || @stoloc || ',' || 'Location Audit Action Failed'
-               and newline = 'Y'
-               and mode = 'A'
-               and path = '$LESDIR/log'
-        }
-        |
-        commit
-    }
-}
+            {
+                [select loc.arecod,
+                        count(*)
+                   from locmst loc
+                  inner
+                   join loc_typ lt
+                     on loc.loc_typ_id = lt.loc_typ_id
+                  where lt.fwiflg = 1
+                  group by loc.arecod]
+                |
+                write output file
+                 where filnam = 'locaud_error.log'
+                   and data = sysdate || ',' || @arecod || ',' || '========================START========================'
+                   and newline = 'Y'
+                   and mode = 'A'
+                   and path = '$LESDIR/log'
+                |
+                [/*#nolimit*/
+                 select loc.stoloc,
+                        loc.wh_id
+                   from locmst loc
+                  inner
+                   join loc_typ lt
+                     on loc.loc_typ_id = lt.loc_typ_id
+                  where lt.fwiflg = 1
+                    and loc.arecod = @arecod]
+                |
+                validate location
+                 where stoloc = @stoloc
+                   and wh_id = @wh_id catch(@?)
+                |
+                if (@action is not null and @action != 'UNKNOWN')
+                {
+                    execute server command
+                     where cmd = @action catch(@?)
+                    |
+                    if (@? <> 0)
+                    {
+                        write output file
+                         where filnam = 'locaud_error.log'
+                           and data = sysdate || ',' || @stoloc || ',' || 'Location Audit Action Failed'
+                           and newline = 'Y'
+                           and mode = 'A'
+                           and path = '$LESDIR/log'
+                    }
+                    |
+                    commit
+                }
+            }>>res
+            |
             write output file
              where filnam = 'LOCSTS_RESET.log'
                and data = sysdate || ',' || @stoloc || ',' || @locsts || ',' || 'Location successfully reset'
