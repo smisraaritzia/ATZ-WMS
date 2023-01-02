@@ -1,5 +1,7 @@
 job_id,role_id,name,enabled,type,command,log_file,trace_level,overlap,schedule,start_delay,timer,grp_nam
-USR_RPT_RVL_MP_DETAILS,,Aritzia Report - RVL Merch Pull Details by Item,0,cron,"[SELECT c.prtnum,
+USR_RPT_RVL_MP_DETAILS,,Aritzia Report - RVL Merch Pull Details by Item,0,cron,"list warehouses
+|
+[SELECT c.prtnum,
         c.pull_date,
         c.merch_catg,
         c.exp_qty,
@@ -110,8 +112,8 @@ USR_RPT_RVL_MP_DETAILS,,Aritzia Report - RVL Merch Pull Details by Item,0,cron,"
                   WHERE lm.arecod = 'PICK'
                   GROUP BY prtnum) cl
              ON cl.prtnum = b.prtnum
-          WHERE pv.wh_id = 'DC01'
-            AND pm.wh_id = 'DC01'
+          WHERE pv.wh_id = @wh_id
+            AND pm.wh_id = @wh_id
             AND pv.defftp_flg = 1
             AND b.rem_qty > 0) c
   ORDER BY c.pull_date] >> res
@@ -119,7 +121,7 @@ USR_RPT_RVL_MP_DETAILS,,Aritzia Report - RVL Merch Pull Details by Item,0,cron,"
 if (@? = 0)
 {
     expand environment variable
-     where name = '$dc01outputs' || '\RVL Merch Pull Details by Item\'
+     where name = '$' || @wh_id || 'outputs' || '\RVL Merch Pull Details by Item\'
     |
     publish data
      where path = @value
