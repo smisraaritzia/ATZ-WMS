@@ -127,7 +127,7 @@ if (@pathname = @resfil and @type = 'F')
 {
     publish data
      where hostname = 'azeus2smtp.jdadelivers.com'
-       and mail_from = 'ITWMS-DC01Alerts@jdadelivers.com'
+       and mail_from = 'ITWMS-'||@wh_id||'Alerts@jdadelivers.com'
        and send_to_list = 'supplychaintechteam@aritzia.com;rlui@aritzia.com;outboundorders@aritzia.com;DCSupervisors@aritzia.com;jmac@aritzia.com;ssnow@aritzia.com;gsingh@aritzia.com;aabraham@aritzia.com;cchavez@aritzia.com;rlouie@aritzia.com;dkovacs@aritzia.com;CA_DCitemchecks@aritzia.com;apang@aritzia.com;wlin@aritzia.com'
     |
     send email
