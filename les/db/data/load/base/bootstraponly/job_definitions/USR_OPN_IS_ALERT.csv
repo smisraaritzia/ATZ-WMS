@@ -29,21 +29,16 @@ if (@? = 0)
     |
     publish data
      where hostname = 'azeus2smtp.jdadelivers.com'
-       and mail_from = 'ITWMS-' || @wh_id || 'Alerts @jdadelivers.com '
-       and send_to_list = ' hsato @aritzia.com;
-    chtang @aritzia.com;
-    cumali @aritzia.com;
-    ege @aritzia.com;
-    eComInOrderExpeditor @aritzia.com;
-    supplychaintechteam @aritzia.com '
+       and mail_from = 'ITWMS-' || @wh_id || 'Alerts@jdadelivers.com'
+       and send_to_list = 'hsato@aritzia.com;chtang@aritzia.com;cumali@aritzia.com;ege@aritzia.com;eComInOrderExpeditor@aritzia.com;supplychaintechteam@aritzia.com'
        and trknum = @result_string
     |
     expand environment variable
-     where name = '$' || @wh_id || 'outputs '
+     where name = '$' || @wh_id || 'outputs'
     |
-    [select case when charindex(' DEV ', @value) > 0 then ' BY DEV '
-                 when charindex(' TST ', @value) > 0 then ' BY QA '
-                 else ' BY PROD '
+    [select case when charindex('DEV', @value) > 0 then 'BY DEV'
+                 when charindex('TST', @value) > 0 then 'BY QA'
+                 else 'BY PROD'
             end envdsc
        from dual]
     |
@@ -58,29 +53,24 @@ else if (@? <> -1403)
 {
     [select trknum
        from RCVTRK
-      where rcvtrk_stat = ' R '
-        and trknum like ' %RTN% '] catch(-1403) >> res
+      where rcvtrk_stat = 'R'
+        and trknum like '%RTN%'] catch(-1403) >> res
     |
     if (@? = 0)
     {
         convert column results to string
          where resultset = @res
-           and colnam = ' trknum '
-           and separator = ', '
+           and colnam = 'trknum'
+           and separator = ','
         |
         publish data
          where hostname = 'azeus2smtp.jdadelivers.com'
            and mail_from = 'ITWMS-' || @wh_id || 'Alerts @jdadelivers.com'
-           and send_to_list = 'hsato@aritzia.com;
-        chtang@aritzia.com;
-        cumali@aritzia.com;
-        ege@aritzia.com;
-        eComInOrderExpeditor@aritzia.com;
-        supplychaintechteam@aritzia.com'
+           and send_to_list = 'hsato@aritzia.com;chtang@aritzia.com;cumali@aritzia.com;ege@aritzia.com;eComInOrderExpeditor@aritzia.com;supplychaintechteam@aritzia.com'
            and trknum = @result_string
         |
         expand environment variable
-         where name = ' $' || @wh_id || 'outputs' 
+         where name = '$' || @wh_id || 'outputs'
         |
         [select case when charindex('DEV', @value) > 0 then 'BY DEV'
                      when charindex('TST', @value) > 0 then 'BY QA'
