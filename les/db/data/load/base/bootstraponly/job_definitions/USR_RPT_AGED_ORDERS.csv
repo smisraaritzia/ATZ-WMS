@@ -1,5 +1,6 @@
 job_id,role_id,name,enabled,type,command,log_file,trace_level,overlap,schedule,start_delay,timer,grp_nam
-USR_RPT_AGED_ORDERS,,Aritzia Report - Aged Orders (Hourly),0,cron,"[/*#nolimit*/ SELECT (CONVERT(VARCHAR(10), o.adddte, 103)) order_drop_date,
+USR_RPT_AGED_ORDERS,,Aritzia Report - Aged Orders (Hourly),0,cron,"[/*#nolimit*/
+ SELECT (CONVERT(VARCHAR(10), o.adddte, 103)) order_drop_date,
         CONVERT(VARCHAR(8), o.adddte, 108) order_drop_time,
         o.ordnum order_number,
         sh.carcod carrier,
@@ -126,9 +127,9 @@ if (@? = 0)
     |
     publish data
      where path = @value
-     |
-     write csv files
+    |
+    write csv file
      where resdata = @res
-     and filnam = 'aged_orders-' || to_char(sysdate, 'YYYYMMDD-hh24mi') || '.csv'
-     and path = @path
+       and filnam = 'aged_orders-' || to_char(sysdate, 'YYYYMMDD-hh24mi') || '.csv'
+       and path = @path
 }",$LESDIR/log/usr_rpt_agedorders.log,,0,"0 0 0,5,6,7,8,9,10,11,12,13,14,15,16,17,18,19,20,21,22,23 ? * * *",,,usr_data
