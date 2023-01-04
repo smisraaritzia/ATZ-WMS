@@ -3,7 +3,7 @@ USR_S321_GUARDRAIL_ALERT,,Aritzia S321 Guardrail Alert,0,cron,"list warehouses
 |
 {
     expand environment variable
-     where name = '$' || @wh_id || 'outputs ' || ' \S321 Alert\ '
+     where name = '$' || @wh_id || 'outputs' || '\S321 Alert\'
     |
     publish data
      where path = @value
@@ -110,8 +110,7 @@ USR_S321_GUARDRAIL_ALERT,,Aritzia S321 Guardrail Alert,0,cron,"list warehouses
          where resdata = @res
            and filnam = 'S321_alert_' || to_char(sysdate, 'YYYYMMDD-HH24') || '.csv'
            and path = @path
-    }
-  ;
+    };
 }
 |
 expand environment variable
@@ -127,7 +126,7 @@ if (@pathname = @resfil and @type = 'F')
 {
     publish data
      where hostname = 'azeus2smtp.jdadelivers.com'
-       and mail_from = 'ITWMS-'||@wh_id||'Alerts@jdadelivers.com'
+       and mail_from = 'ITWMS-' || @wh_id || 'Alerts@jdadelivers.com'
        and send_to_list = 'supplychaintechteam@aritzia.com;rlui@aritzia.com;outboundorders@aritzia.com;DCSupervisors@aritzia.com;jmac@aritzia.com;ssnow@aritzia.com;gsingh@aritzia.com;aabraham@aritzia.com;cchavez@aritzia.com;rlouie@aritzia.com;dkovacs@aritzia.com;CA_DCitemchecks@aritzia.com;apang@aritzia.com;wlin@aritzia.com'
     |
     send email
