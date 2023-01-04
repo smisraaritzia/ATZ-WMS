@@ -14,14 +14,14 @@ USR_MPS_ALERT,,Aritzia US MPS Alert,0,cron,"list warehouses
   where polcod = 'DSS-ARITZIA'
     and polvar = 'JOB-MASTER'
     and polval = 'MPS-ALERT'
-    and wh_id = @wh_id,
+    and wh_id = @wh_id
     and rtstr1 = @dayofweek
     and rtstr2 = @time] catch(-1403)
 |
 if (@runchk)
 {
     expand environment variable
-     where name = '$' || @wh_id || 'outputs' || '\MPS Alert'
+     where name = '$' || @wh_id || 'outputs' || '\MPS Alert\'
     |
     publish data
      where path = @value
@@ -83,13 +83,13 @@ if (@runchk)
     {
         write csv file
          where resdata = @res
-           and filnam = 'MPS_alert_' || to_char(sysdate, 'YYYYMMDD-HH24MI') || '.csv '
+           and filnam = 'MPS_alert_' || to_char(sysdate, 'YYYYMMDD-HH24MI') || '.csv'
            and path = @path
     };
     list warehouses
     |
     expand environment variable
-     where name = '$' || @wh_id || 'outputs' || '\MPS Alert\MPS_alert_' || to_char(sysdate, 'YYYYMMDD-HH24MI') || '.csv '
+     where name = '$' || @wh_id || 'outputs' || '\MPS Alert\MPS_alert_' || to_char(sysdate, 'YYYYMMDD-HH24MI') || '.csv'
     |
     publish data
      where resfil = @value
@@ -100,11 +100,11 @@ if (@runchk)
     if (@pathname = @resfil and @type = 'F')
     {
         expand environment variable
-         where name = '$' || wh_id || 'outputs'
+         where name = '$' || @wh_id || 'outputs'
         |
-        [select case when charindex('DEV', @value) > 0 then ' BY DEV '
-                     when charindex(' TST ', @value) > 0 then ' BY QA '
-                     else ' BY PROD '
+        [select case when charindex('DEV', @value) > 0 then 'BY DEV'
+                     when charindex('TST', @value) > 0 then 'BY QA'
+                     else 'BY PROD'
                 end envdsc
            from dual]
         |
