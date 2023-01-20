@@ -1,0 +1,133 @@
+<trigger>
+  <name>change_dss_distro_receive_truck</name>
+  <on-command>check in trailer</on-command>
+  <description />
+  <fire-sequence>9005</fire-sequence>
+  <local-syntax>
+<![CDATA[
+/* Check Trailer Type */
+[select trlr.trlr_cod,
+        trlr.trlr_id
+   from trlr,
+        rcvtrk
+  where trlr.trlr_id = rcvtrk.trlr_id
+    and trlr.trlr_id = @trlr_id
+    and rcvtrk.wh_id = nvl(@wh_id, @@wh_id)] catch(-1403, 510)
+|
+if (@trlr_cod = 'RCV')
+{
+    /* Find all Inbound Shipments Tied to Receiving Trailer */
+    {
+        [select distinct rcvtrk.trknum,
+                rcvlin.invnum,
+                rcvinv.po_num,
+                rcvtrk.trlr_id,
+                rcvtrk.wh_id
+           from rcvtrk
+          inner
+           join rcvlin
+             on rcvlin.trknum = rcvtrk.trknum
+            and rcvlin.wh_id = rcvtrk.wh_id
+          inner
+           join rcvinv
+             on rcvlin.trknum = rcvinv.trknum
+            and rcvlin.invnum = rcvinv.invnum
+          where rcvtrk.trlr_id = @trlr_id
+            and rcvtrk.wh_id = nvl(@wh_id, @@wh_id)] catch(-1403, 510)
+        |
+        /* Mass Update Eligible Distro with Inbound Shipment and Planned Inbound Order Number, For Each Separate Inbound Shipment */
+        if (@? = 0)
+        {
+            [select distinct distro.distro_id
+               from distro
+               join ord_line
+                 on distro.distro_id = ord_line.distro_id
+                and distro.wh_id = ord_line.wh_id
+                and distro.client_id = ord_line.client_id
+               join dss_ord_line
+                 on dss_ord_line.ordnum = ord_line.ordnum
+                and dss_ord_line.ordlin = ord_line.ordlin
+              where distro.trknum is null
+                and distro.invnum = @po_num
+                and distro.wh_id = nvl(@wh_id, @@wh_id)] catch(-1403, 510)
+            |
+            if (@? = 0)
+            {
+                [update distro
+                    set trknum = @trknum,
+                        invnum = @invnum
+                  where distro.trknum is null
+                    and distro.invnum = @po_num
+                    and distro_id = @distro_id
+                    and distro.wh_id = nvl(@wh_id, @@wh_id)] catch(-1403, 510)
+            }
+        }
+    };
+    [select 'x'
+       from poldat_view
+      where wh_id = nvl(@wh_id, @@wh_id)
+        and polcod = 'ZZZUSR-ARITZIA'
+        and polvar = 'HOST-RCT-DISTRO-FLG'
+        and polval = 'ENABLED'
+        and rtnum1 = 1] catch(-1403, 510)
+    |
+    if (@? = 0)
+    {
+        [select distinct invdtl.dtlnum,
+                rcvinv.invtyp
+           from rcvlin
+           join rcvinv
+             on rcvlin.invnum = rcvinv.invnum
+            and rcvlin.trknum = rcvinv.trknum
+            and rcvlin.wh_id = rcvinv.wh_id
+            and rcvlin.supnum = rcvinv.supnum
+            and rcvlin.client_id = rcvinv.client_id
+           join rcvtrk
+             on rcvinv.trknum = rcvtrk.trknum
+            and rcvinv.wh_id = rcvtrk.wh_id
+           join invdtl
+             on rcvlin.rcvkey = invdtl.rcvkey
+           join invsub
+             on invdtl.subnum = invsub.subnum
+           join invlod
+             on invsub.lodnum = invlod.lodnum
+          where invdtl.distro_id is null
+            and exists(select 1
+                         from distro,
+                              distro_typ
+                        where distro.wh_id = rcvlin.wh_id
+                          and distro.client_id = rcvlin.client_id
+                          and distro.trknum = rcvlin.trknum
+                          and distro.supnum = rcvlin.supnum
+                          and distro.invnum = rcvlin.invnum
+                          and distro.invlin = rcvlin.invlin
+                          and distro.invsln = rcvlin.invsln
+                          and distro.distro_typ = distro_typ.distro_typ
+                          and distro.prtnum = rcvlin.prtnum
+                          and distro.prt_client_id = rcvlin.prt_client_id)
+            and rcvtrk.trlr_id = @trlr_id
+            and rcvtrk.wh_id = nvl(@wh_id, @@wh_id)] catch(-1403, 510)
+        |
+        if (@? = 0)
+        {
+            [select *
+               from poldat_view
+              where polcod = 'DSS-ARITZIA'
+                and polvar = 'DISTRO'
+                and polval = 'INVTYP'
+                and rtstr1 = @invtyp
+                and wh_id = nvl(@wh_id, @@wh_id)
+                and rownum < 2] catch(-1403, 510)
+            |
+            if (@? = 0)
+            {
+                [update invdtl
+                    set distro_flg = 1
+                  where dtlnum = @dtlnum] catch(-1403, 510)
+            }
+        }
+    }
+}
+]]>
+</local-syntax>
+</trigger>
