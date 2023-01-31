@@ -1,2 +1,0 @@
-job_id,role_id,name,enabled,type,command,log_file,trace_level,overlap,schedule,start_delay,timer,grp_nam
-UC_AUTO_CLOSE_PARCEL_ECOM_US,,Automatically Load and Close Parcel US Ecom Shipment,0,cron,"process dss parcel shipment auto load and close where ordtyp_list = 'E05,E07,E09,E11,G05,G07,R05,R07,S05,S07,S09,S11,P05,P07,I05,I07,M05,M07,C05,C07,F05,F07,H05,H07,J05,J07,K05,K07,L05,L07'",$LESDIR/log/auto_close_parcels_ecom_us.log,,0,"0 0/5 16-23 ? * 2-6 *",60,,usr_data
