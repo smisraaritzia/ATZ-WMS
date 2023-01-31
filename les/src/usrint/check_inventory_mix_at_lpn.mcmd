@@ -1,0 +1,259 @@
+<command>
+  <name>check inventory mix at lpn</name>
+  <description>check inventory mix at lpn</description>
+  <type>Local Syntax</type>
+  <local-syntax>
+<![CDATA[
+/****************************************************************
+ * USER  JIRA            DATE       Description                      
+ * ----  -----           --------   ------------                     
+ * RC    ARTZIA-565      07/08/22   ATZPalletBuild                     
+ *                                                               
+ *This wrapper overrides the base command to allow carrier mixing
+ *on RF ATZ Ship Pallet Build form                               
+ ****************************************************************/
+/* Check if destination id for Ship Pallet Build is in the correct movezone, 
+   if not, kick out to base command*/
+[select 'x' dstchk
+   from invlod
+   join locmst
+     on locmst.stoloc = invlod.stoloc
+    and locmst.wh_id = invlod.wh_id
+   join mov_zone
+     on locmst.mov_zone_id = mov_zone.mov_zone_id
+   join (select rtstr1
+           from poldat_view
+          where polcod = 'DSS-ARITZIA'
+            and polvar = 'SHP-PALLET-BUILD'
+            and polval = 'SHIP-MOVZONE-DEST'
+            and wh_id = @wh_id) pd
+     on pd.rtstr1 = mov_zone.mov_zone_cod
+  where invlod.lodnum = @dstlod
+    and invlod.wh_id = @wh_id
+    and rownum < 2] catch(-1403)
+|
+if (@dstchk)
+{
+    /*Check if source id is in the correct move zone, if not, 
+       kick out to base command */
+    [select 'x' srcchk
+       from invsub
+       join invlod
+         on invsub.lodnum = invlod.lodnum
+       join locmst
+         on locmst.stoloc = invlod.stoloc
+        and locmst.wh_id = invlod.wh_id
+       join mov_zone
+         on locmst.mov_zone_id = mov_zone.mov_zone_id
+       join (select rtstr1
+               from poldat_view
+              where polcod = 'DSS-ARITZIA'
+                and polvar = 'SHP-PALLET-BUILD'
+                and polval = 'SHIP-MOVZONE-SRC'
+                and wh_id = @wh_id) pd
+         on pd.rtstr1 = mov_zone.mov_zone_cod
+      where invsub.subnum = @srcsub
+        and invlod.wh_id = @wh_id
+        and rownum < 2] catch(-1403)
+    |
+    if (@srcchk)
+    {
+        /* Destination load and source are both in one of the accepted move zones, 
+           now check if Destination ID has a carrier code that can override mixing rules */
+        [select shipment.carcod,
+                shipment.srvlvl,
+                shipment.carcod || '-' || shipment.srvlvl codlvl,
+                to_char(shipment.early_shpdte, 'YYYYMMDD') dest_shpdte,
+                pd.rtstr1 dest_mov_zone,
+                nvl(pd.rtnum1, 0) dest_pol_group,
+                nvl(pd.rtnum2, 0) dest_mx_rule
+           from invdtl
+           join invsub
+             on invdtl.subnum = invsub.subnum
+           join invlod
+             on invsub.lodnum = invlod.lodnum
+           join shipment_line
+             on invdtl.ship_line_id = shipment_line.ship_line_id
+           join shipment
+             on shipment.ship_id = shipment_line.ship_id
+            and shipment.wh_id = shipment_line.wh_id
+            and invlod.wh_id = shipment.wh_id
+           join (select rtnum1,
+                        rtnum2,
+                        rtstr2,
+                        rtstr1
+                   from poldat_view
+                  where polcod = 'DSS-ARITZIA'
+                    and polvar = 'SHP-PALLET-BUILD'
+                    and polval = 'SHIP-RESTRICT-OVERRIDE'
+                    and wh_id = @wh_id) pd
+             on pd.rtstr2 = shipment.carcod || '-' || shipment.srvlvl
+          where invlod.lodnum = @dstlod
+            and invlod.wh_id = @wh_id
+            and rownum < 2] catch(-1403)
+        |
+        /* Check the Source ID to see if it is in the same move zone and in the same policy group number for 
+           overriding mixing rules*/
+        [select shipment.carcod,
+                shipment.srvlvl,
+                shipment.carcod || '-' || shipment.srvlvl codlvl,
+                to_char(shipment.early_shpdte, 'YYYYMMDD') src_shpdte,
+                nvl(pd.rtnum1, 0) src_pol_group,
+                nvl(pd.rtnum2, 0) src_mx_rule
+           from invdtl
+           join invsub
+             on invdtl.subnum = invsub.subnum
+           join invlod
+             on invsub.lodnum = invlod.lodnum
+           join shipment_line
+             on invdtl.ship_line_id = shipment_line.ship_line_id
+           join shipment
+             on shipment.ship_id = shipment_line.ship_id
+            and shipment.wh_id = shipment_line.wh_id
+            and invlod.wh_id = shipment.wh_id
+           join (select rtnum1,
+                        rtnum2,
+                        rtstr2,
+                        rtstr1
+                   from poldat_view
+                  where polcod = 'DSS-ARITZIA'
+                    and polvar = 'SHP-PALLET-BUILD'
+                    and polval = 'SHIP-RESTRICT-OVERRIDE'
+                    and wh_id = @wh_id
+                    and rtstr1 = @dest_mov_zone) pd
+             on pd.rtstr2 = shipment.carcod || '-' || shipment.srvlvl
+          where invsub.subnum = @srcsub
+            and invlod.wh_id = @wh_id
+            and rownum < 2] catch(-1403)
+        |
+        publish data
+         where uc_src_pol_group = @src_pol_group
+           and uc_dest_pol_group = @dest_pol_group
+           and dest_shpdte = @dest_shpdte
+           and src_shpdte = @src_shpdte
+        |
+        if ((@uc_src_pol_group = @uc_dest_pol_group) AND (nvl(@uc_src_pol_group, 0) != '0') AND (nvl(@uc_dest_pol_group, 0) != '0'))
+        {
+            if (@dest_mx_rule = '1')
+            {
+                /* Mixing Rule 1 - No mixing of null and early ship date*/
+                if ((@dest_shpdte = @src_shpdte) AND (@dest_shpdte <> '') AND (@src_shpdte <> ''))
+                {
+                    /* Destination load and source sub carrier codes are in the same group and have the same ship date so
+                       we will perform the override of check inventory mix at lpn*/
+                    set return status
+                     where status = '0'
+                }
+                else
+                {
+                    /* Destination load and source sub carrier codes early ship dates do not match, do not allow mix*/
+                    set return status
+                     where status = '11776'
+                }
+            }
+            else if (@dest_mx_rule = '2')
+            {
+                /* Mixing Rule 2 - Allow mixing of null and early ship date*/
+                if ((@dest_shpdte = @src_shpdte) OR (@dest_shpdte = '') OR (@src_shpdte = ''))
+                {
+                    /* Destination load and source sub carrier codes are in the same group and have the same ship date so
+                       we will perform the override of check inventory mix at lpn*/
+                    set return status
+                     where status = '0'
+                }
+                else
+                {
+                    /* Destination load and source sub carrier codes early ship dates do not match, do not allow mix*/
+                    set return status
+                     where status = '11776'
+                }
+            }
+            else if (@dest_mx_rule = '3')
+            {
+                /* Mixing Rule 3 - Allow mixing of everything*/
+                set return status
+                 where status = '0'
+            }
+            else
+            {
+                /* To account for an entry without a mixing rule */
+                ^check inventory mix at lpn
+                 where srclod = @srclod
+                   and dstlod = @dstlod
+                   and dtlnum = @dtlnum
+                   and srcsub = @srcsub
+                   and wh_id = @wh_id
+            }
+        }
+        else
+        {
+            /* Destination load and source sub carrier codes are not in the same group, do not allow mix*/
+            ^check inventory mix at lpn
+             where srclod = @srclod
+               and dstlod = @dstlod
+               and dtlnum = @dtlnum
+               and srcsub = @srcsub
+               and wh_id = @wh_id
+        }
+    }
+    else
+    {
+        /* Source is not in one of the accepted move zones, run base command */
+        ^check inventory mix at lpn
+         where srclod = @srclod
+           and dstlod = @dstlod
+           and dtlnum = @dtlnum
+           and srcsub = @srcsub
+           and wh_id = @wh_id
+    }
+}
+else
+{
+    [select 'x' dstchk
+       from invlod
+       join locmst
+         on locmst.stoloc = invlod.stoloc
+        and locmst.wh_id = invlod.wh_id
+       join mov_zone
+         on locmst.mov_zone_id = mov_zone.mov_zone_id
+       join (select rtstr1
+               from poldat_view
+              where polcod = 'DSS-ARITZIA'
+                and polvar = 'PICK-MOVE-DROP'
+                and polval = 'DO-NOT-ALLOW-LPN-MIX'
+                and wh_id = @wh_id) pd
+         on pd.rtstr1 = mov_zone.mov_zone_cod
+      where invlod.lodnum = @dstlod
+        and invlod.wh_id = @wh_id
+        and rownum < 2] catch(-1403, 510)
+    |
+    if (@dstchk)
+    {
+        set return status
+         where status = '11776'
+    }
+    else
+    {
+        /* Destination load is not in one of the accepted move zones, run base command */
+        ^check inventory mix at lpn
+         where srclod = @srclod
+           and dstlod = @dstlod
+           and dtlnum = @dtlnum
+           and srcsub = @srcsub
+           and wh_id = @wh_id
+    }
+}
+]]>
+</local-syntax>
+  <argument name="srclod" required="yes" datatype="string">Source Load</argument>
+  <argument name="dstlod" required="yes" datatype="string">Destination Load</argument>
+  <argument name="dtlnum" datatype="string">Detail Number</argument>
+  <argument name="srcsub" required="yes" datatype="string">Soruce Subload</argument>
+  <argument name="wh_id" required="yes" datatype="string">Warehouse ID</argument>
+  <documentation>
+<remarks></remarks>
+<exception value="10176">The attempted move was prevented because it would violate the mixing rules for the LPN.</exception>
+<seealso cref="check inventory mix at lpn"></seealso>
+
+</documentation>
+</command>
