@@ -1,0 +1,166 @@
+<command>
+  <name>list usr case lbl for mixed sku asn</name>
+  <description>This command is to fetch the label data for MIxed Case ASN </description>
+  <type>Local Syntax</type>
+  <local-syntax>
+<![CDATA[
+validate stack variable not null
+ where name = 'subnum'
+|
+validate stack variable not null
+ where name = 'trknum'
+|
+if (@? = 0)
+{
+    [select count(distinct prtnum) cnt_of_item
+       from invlod
+       join invsub
+         on invlod.lodnum = invsub.lodnum
+       join invdtl
+         on invsub.subnum = invdtl.subnum
+      where invsub.subnum = @subnum
+        and invlod.wh_id = nvl(@wh_id, @@wh_id)] catch(-1403, 510)
+    |
+    if (@cnt_of_item = 1)
+    {
+        [select invsub.subnum,
+                rcvtrk.trknum,
+                rcvinv.po_num,
+                prtmst_view.prtnum,
+                prtmst_view.dsp_prtnum,
+                dss_prtmst.generic,
+                prtmst_view.prtsize,
+                prtmst_view.prtcolor,
+                dscmst.lngdsc prtcolor_dsc,
+                sum(invdtl.untqty) qty
+           from rcvtrk
+           join rcvinv
+             on rcvtrk.trknum = rcvinv.trknum
+            and rcvtrk.wh_id = rcvinv.wh_id
+           join rcvlin
+             on rcvlin.trknum = rcvinv.trknum
+            and rcvlin.invnum = rcvinv.invnum
+            and rcvlin.supnum = rcvinv.supnum
+            and rcvlin.wh_id = rcvinv.wh_id
+            and rcvlin.client_id = rcvinv.client_id
+           join invdtl
+             on invdtl.rcvkey = rcvlin.rcvkey
+           join invsub
+             on invsub.subnum = invdtl.subnum
+           join invlod
+             on invlod.lodnum = invsub.lodnum
+           join prtmst_view
+             on invdtl.prtnum = prtmst_view.prtnum
+            and invdtl.prt_client_id = prtmst_view.prt_client_id
+           join dss_prtmst
+             on prtmst_view.prtnum = dss_prtmst.prtnum
+            and prtmst_view.prt_client_id = dss_prtmst.prt_client_id
+            and prtmst_view.wh_id = dss_prtmst.wh_id
+           left
+           join dscmst
+             on dscmst.colnam = 'prtcolor'
+            and dscmst.locale_id = nvl(@locale_id, @@locale_id)
+            and dscmst.colval = prtmst_view.prtcolor
+          where rcvinv.wh_id = nvl(@wh_id, @@wh_id)
+            and invsub.subnum = @subnum
+            and rcvtrk.trknum = @trknum
+          group by invsub.subnum,
+                rcvtrk.trknum,
+                rcvinv.po_num,
+                prtmst_view.prtnum,
+                prtmst_view.dsp_prtnum,
+                dss_prtmst.generic,
+                prtmst_view.prtsize,
+                prtmst_view.prtcolor,
+                dscmst.lngdsc] catch(-1403, 510)
+        |
+        [select dscmst.lngdsc prtsize_dsc
+           from dscmst
+          where colnam = 'prtsize'
+            and dscmst.locale_id = nvl(@locale_id, @@locale_id)
+            and dscmst.colval = @prtsize] catch(-1403, 510)
+        |
+        publish data
+         where subnum = @subnum
+           and trknum = @trknum
+           and po_num = @po_num
+           and article = @prtnum
+           and UPC = @dsp_prtnum
+           and style = @generic
+           and color = nvl(@prtcolor_dsc, @prtcolor)
+           and size = nvl(@prtsize_dsc, @prtsize)
+           and quantity = @qty
+    }
+    else if (@cnt_of_item > 1)
+    {
+        [select sum(untqty) qty
+           from invlod
+           join invsub
+             on invlod.lodnum = invsub.lodnun
+           join invdtl
+             on invsub.subnum = invdtl.subnum
+          where invsub.subnum = @subnum
+            and invlod.wh_id = nvl(@wh_id, @@wh_id)] catch(-1403, 510)
+        |
+        [select distinct invsub.subnum,
+                rcvtrk.trknum,
+                rcvinv.po_num,
+                'MANY' prtnum,
+                prtmst_view.dsp_prtnum,
+                dss_prtmst.generic,
+                prtmst_view.prtsize,
+                dscmst.lngdsc prtcolor_dsc
+           from rcvtrk
+           join rcvinv
+             on rcvtrk.trknum = rcvinv.trknum
+            and rcvtrk.wh_id = rcvinv.wh_id
+           join rcvlin
+             on rcvlin.trknum = rcvinv.trknum
+            and rcvlin.invnum = rcvinv.invnum
+            and rcvlin.supnum = rcvinv.supnum
+            and rcvlin.wh_id = rcvinv.wh_id
+            and rcvlin.client_id = rcvinv.client_id
+           join invdtl
+             on invdtl.rcvkey = rcvlin.rcvkey
+           join invsub
+             on invsub.subnum = invdtl.subnum
+           join invlod
+             on invlod.lodnum = invsub.lodnum
+           join prtmst_view
+             on invdtl.prtnum = prtmst_view.prtnum
+            and invdtl.prt_client_id = prtmst_view.prt_client_id
+           join dss_prtmst
+             on prtmst_view.prtnum = dss_prtmst.prtnum
+            and prtmst_view.prt_client_id = dss_prtmst.prt_client_id
+            and prtmst_view.wh_id = dss_prtmst.wh_id
+           left
+           join dscmst
+             on dscmst.colnam = 'prtcolor'
+            and dscmst.locale_id = nvl(@locale_id, @@locale_id)
+            and dscmst.colval = prtmst_view.prtcolor
+          where rcvinv.wh_id = nvl(@wh_id, @@wh_id)
+            and invsub.subnum = @subnum
+            and rcvtrk.trknum = @trknum
+            and rownum < 2] catch(-1403, 510)
+        |
+        [select dscmst.lngdsc prtsize_dsc
+           from dscmst
+          where colnam = 'prtsize'
+            and dscmst.locale_id = nvl(@locale_id, @@locale_id)
+            and dscmst.colval = @prtsize] catch(-1403, 510)
+        |
+        publish data
+         where subnum = @subnum
+           and trknum = @trknum
+           and po_num = @po_num
+           and article = @prtnum
+           and UPC = @dsp_prtnum
+           and style = @generic
+           and color = nvl(@prtcolor_dsc, @prtcolor)
+           and size = nvl(@prtsize_dsc, @prtsize)
+           and quantity = @qty
+    }
+}
+]]>
+</local-syntax>
+</command>

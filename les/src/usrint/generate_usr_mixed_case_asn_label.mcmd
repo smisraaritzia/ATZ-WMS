@@ -1,0 +1,145 @@
+<command>
+  <name>generate usr mixed case asn label</name>
+  <description>This command is to generate Mixed Case ASN Label</description>
+  <type>Local Syntax</type>
+  <local-syntax>
+<![CDATA[
+[select 'x'
+   from poldat_view
+  where polcod = 'DSS-ARITZIA'
+    and polvar = 'LABELS'
+    and polval = 'ENABLE-ASN-MIXED-CASE'
+    and wh_id = nvl(@wh_id, @@wh_id)
+    and rtnum1 = 1] catch(-1403, 510)
+|
+if (@? = 0)
+{
+    validate stack variable not null
+     where name = 'phy_subnum' catch(802)
+    |
+    if (@? != 0)
+    {
+        set return status
+         where status = '11435'
+    }
+    else
+    {
+        [select 'x'
+           from poldat_view
+          where polcod = 'DSS-ARITZIA'
+            and polvar = 'LABELS'
+            and polval = 'ASN-LBL-PRINT-AFTER-CLOSE'
+            and rtnum1 = 1
+            and wh_id = nvl(@wh_id, @@wh_id)] catch(-1403, 510)
+        |
+        if (@? != 0)
+        {
+            publish data
+             where rcvtrk_status = 'rcvtrk_stat <>' || "'C'"
+        }
+        else
+        {
+            publish data
+             where rcvtrk_status = '1=1'
+        }
+        |
+        [select rtstr1 cmd,
+                rtstr2 def_cmd
+           from poldat_view
+          where polcod = 'DSS-ARITZIA'
+            and polvar = 'LABELS'
+            and polval = 'ASN-CASE-GENERATION'
+            and wh_id = nvl(@wh_id, @@wh_id)] catch(-1403, 510)
+        |
+        execute server command
+         where cmd = nvl(@cmd, @def_cmd)
+        |
+        [select 'x'
+           from rcvtrk
+           join rcvinv
+             on rcvtrk.trknum = rcvinv.trknum
+            and rcvtrk.wh_id = rcvinv.wh_id
+           join rcvlin
+             on rcvlin.trknum = rcvinv.trknum
+            and rcvlin.invnum = rcvinv.invnum
+            and rcvlin.supnum = rcvinv.supnum
+            and rcvlin.wh_id = rcvinv.wh_id
+            and rcvlin.client_id = rcvinv.client_id
+           join invdtl
+             on invdtl.rcvkey = rcvlin.rcvkey
+           join invsub
+             on invsub.subnum = invdtl.subnum
+           join invlod
+             on invlod.lodnum = invsub.lodnum
+          where invsub.subnum like @act_subnum || '%'
+            and invlod.wh_id = nvl(@wh_id, @@wh_id)
+            and rownum < 2] catch(-1403, 510)
+        |
+        if (@? != 0)
+        {
+            set return status
+             where status = '11775'
+        }
+        else
+        {
+            [select distinct rcvtrk.trknum,
+                    invsub.subnum
+               from rcvtrk
+               join rcvinv
+                 on rcvtrk.trknum = rcvinv.trknum
+                and rcvtrk.wh_id = rcvinv.wh_id
+               join rcvlin
+                 on rcvlin.trknum = rcvinv.trknum
+                and rcvlin.invnum = rcvinv.invnum
+                and rcvlin.supnum = rcvinv.supnum
+                and rcvlin.wh_id = rcvinv.wh_id
+                and rcvlin.client_id = rcvinv.client_id
+               join invdtl
+                 on invdtl.rcvkey = rcvlin.rcvkey
+               join invsub
+                 on invsub.subnum = invdtl.subnum
+               join invlod
+                 on invlod.lodnum = invsub.lodnum
+              where invsub.subnum like @act_subnum || '%'
+                and invlod.wh_id = nvl(@wh_id, @@wh_id)
+                and @rcvtrk_status:raw] catch(-1403, 510)
+            |
+            [select rtstr1 lbl_name
+               from poldat_view
+              where polcod = 'DSS-ARITZIA'
+                and polvar = 'LABELS'
+                and polval = 'ASN-LBL-XREF'
+                and wh_id = nvl(@wh_id, @@wh_id)
+                and rownum < 2] catch(-1403, 510)
+            |
+            [select pm.prtadr
+               from devmst dm,
+                    prsmst pm
+              where pm.wh_id = dm.wh_id
+                and dm.lbl_prtadr = pm.prtadr
+                and dm.devcod = nvl(@devcod, @@devcod)] catch(-1403, 510)
+            |
+            if (!@locale_id)
+            {
+                publish data
+                 where locale_id = @@locale_id
+            }
+            |
+            /* Get a label format */
+            get label format
+             where format = @lbl_name
+            |
+            /* Produce the label */
+            produce label
+            |
+            publish data
+             where wh_id = nvl(@wh_id, @@wh_id)
+            |
+            /* Print the Label and delete the .out file*/
+           print label
+        }
+    }
+}
+]]>
+</local-syntax>
+</command>
