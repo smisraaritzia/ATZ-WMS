@@ -76,7 +76,7 @@ if (@trlr_cod = 'RCV')
     |
     if (@? = 0)
     {
-        [select distinct invdtl.dtlnum,
+        [select invdtl.dtlnum,
                 rcvinv.invtyp
            from rcvlin
            join rcvinv
@@ -94,6 +94,14 @@ if (@trlr_cod = 'RCV')
              on invdtl.subnum = invsub.subnum
            join invlod
              on invsub.lodnum = invlod.lodnum
+           join (select rtstr1
+                   from poldat_view
+                  where polcod = 'DSS-ARITZIA'
+                    and polvar = 'DISTRO'
+                    and polval = 'INVTYP'
+                    and poldat_view.wh_id = nvl(@wh_id, @@wh_id)
+                    and rownum < 2) pd
+             on pd.rtstr1 = rcvinv.invtyp
           where invdtl.distro_id is null
             and exists(select 1
                          from distro,
@@ -108,22 +116,16 @@ if (@trlr_cod = 'RCV')
                           and distro.distro_typ = distro_typ.distro_typ
                           and distro.prtnum = rcvlin.prtnum
                           and distro.prt_client_id = rcvlin.prt_client_id)
-            and exists(select 'x'
-             from poldat_view
-            where polcod = 'DSS-ARITZIA'
-              and polvar = 'DISTRO'
-              and polval = 'INVTYP'
-              and poldat_view.rtstr1 = rcvinv.invtyp
-                          and poldat_view.wh_id = nvl(@wh_id, @@wh_id)
-                          and rownum < 2)
             and rcvtrk.trlr_id = @trlr_id
-            and rcvtrk.wh_id = nvl(@wh_id, @@wh_id)] catch(-1403, 510)
+            and rcvtrk.wh_id = nvl(@wh_id, @@wh_id)
+          group by invdtl.dtlnum,
+                rcvinv.invtyp] catch(-1403, 510)
         |
         if (@? = 0)
         {
-                [update invdtl
-                    set distro_flg = 1
-                  where dtlnum = @dtlnum] catch(-1403, 510)
+            [update invdtl
+                set distro_flg = 1
+              where dtlnum = @dtlnum] catch(-1403, 510)
         }
     }
 }
