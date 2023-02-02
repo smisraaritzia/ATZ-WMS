@@ -1,0 +1,54 @@
+job_id,role_id,name,enabled,type,command,log_file,trace_level,overlap,schedule,start_delay,timer,grp_nam
+USR_PRTFAMUPD_TLCHIVOL,,Aritzia Item Family Update TLC-HI_VOL,0,cron,"list warehouses
+|
+[select dss.prtnum,
+        prtmst.prtfam old_prtfam
+   from dss_prtmst dss
+  inner
+   join inventory_view inv
+     on dss.prtnum = inv.prtnum
+    and dss.prt_client_id = inv.prt_client_id
+    and dss.wh_id = inv.wh_id
+  inner
+   join prtmst
+     on dss.prtnum = prtmst.prtnum
+    and dss.prt_client_id = prtmst.prt_client_id
+    and dss.wh_id = prtmst.wh_id_tmpl
+        /* Looking for all coats and jackets with WOOL, excluding blazers and shirt jackets */
+  where dss.merch_catg in ('COAT', 'JACKET')
+    and dss.customs_descr like '%WOOL%'
+    and (dss.style_en not like '%BLAZER%' and dss.style_en not like '%SHIRT%')
+ /* items where item family is not already TLC-HI_VOL */
+    and prtmst.prtfam <> 'TLC-HI_VOL'
+    and prtmst.wh_id_tmpl = @wh_id
+  group by dss.prtnum,
+        prtmst.prtfam] catch(-1403)
+|
+if (@? = 0)
+{
+    [update prtmst
+        set prtfam = 'TLC-HI_VOL',
+            last_upd_dt = sysdate,
+            last_upd_user_id = 'NOUSER'
+      where prtnum = @prtnum
+        and wh_id_tmpl = @wh_id] catch(@?)
+    |
+    if (@? = 0)
+    {
+        write output file
+         where filnam = 'usr_prtfam_update_TLC.log'
+           and data = sysdate || ',' || @prtnum || ',' || @old_prtfam || ',' || 'Item family TLC-HI_VOL update successful'
+           and newline = 'Y'
+           and mode = 'A'
+           and path = '$LESDIR/log'
+    }
+    else
+    {
+        write output file
+         where filnam = 'usr_prtfam_update_TLC.log'
+           and data = sysdate || ',' || @prtnum || ',' || @old_prtfam || ',' || 'Item family TLC-HI_VOL update failure'
+           and newline = 'Y'
+           and mode = 'A'
+           and path = '$LESDIR/log'
+    }
+}",$LESDIR/log/usr_prtfamupd_tlchivol.log,,0,"5 5 5-23 ? * * *",,,usr_data

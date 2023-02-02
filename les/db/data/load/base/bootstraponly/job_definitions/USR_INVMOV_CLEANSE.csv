@@ -1,0 +1,171 @@
+job_id,role_id,name,enabled,type,command,log_file,trace_level,overlap,schedule,start_delay,timer,grp_nam
+USR_INVMOV_CLEANSE,,Aritzia Orphaned Inventory Move Cleanser,0,timer,"{
+    [select im.*
+       from invmov im
+       left outer
+       join invdtl dtl
+         on im.lodnum = dtl.dtlnum
+      where im.lodlvl = 'D'
+        and dtl.dtlnum is null
+     union
+     select im.*
+       from invmov im
+       left outer
+       join invsub sub
+         on im.lodnum = sub.subnum
+      where im.lodnum = 'S'
+        and sub.subnum is null
+     union
+     select im.*
+       from invmov im
+       left outer
+       join invlod lod
+         on im.lodnum = lod.lodnum
+      where im.lodnum = 'L'
+        and lod.lodnum is null] catch(-1403)
+    |
+    if (@? = 0)
+    {
+        [delete
+           from invmov
+          where lodnum = @lodnum
+            and lodlvl = @lodlvl
+            and seqnum = @seqnum
+            and stoloc = @stoloc
+            and wh_id = @wh_id] catch(-1403)
+    }
+};
+{
+    [select distinct im.lodnum,
+            im.lodlvl,
+            im.seqnum,
+            im.stoloc,
+            im.wh_id
+       from inventory_view iv
+      inner
+       join locmst loc
+         on iv.stoloc = loc.stoloc
+      inner
+       join invmov im
+         on iv.subnum = im.lodnum
+      inner
+       join locmst loc2
+         on im.stoloc = loc2.stoloc
+      where loc.arecod = 'PICK'
+        and loc2.arecod = 'PICK'] catch(-1403)
+    |
+    if (@? = 0)
+    {
+        [delete
+           from invmov
+          where lodnum = @lodnum
+            and lodlvl = @lodlvl
+            and seqnum = @seqnum
+            and stoloc = @stoloc
+            and wh_id = @wh_id] catch(-1403)
+    }
+};
+{
+    [select distinct im.lodnum,
+            im.lodlvl,
+            im.seqnum,
+            im.stoloc,
+            im.wh_id
+       from inventory_view iv
+      inner
+       join locmst loc
+         on iv.stoloc = loc.stoloc
+      inner
+       join invmov im
+         on iv.lodnum = im.lodnum
+      inner
+       join locmst loc2
+         on im.stoloc = loc2.stoloc
+      where loc.arecod = 'RESV'
+        and loc2.arecod = 'RESV'] catch(-1403)
+    |
+    if (@? = 0)
+    {
+        [delete
+           from invmov
+          where lodnum = @lodnum
+            and lodlvl = @lodlvl
+            and seqnum = @seqnum
+            and stoloc = @stoloc
+            and wh_id = @wh_id] catch(-1403)
+    }
+};
+{
+    [select distinct im.lodnum,
+            im.lodlvl,
+            im.seqnum,
+            im.stoloc,
+            im.wh_id
+       from inventory_view iv
+      inner
+       join locmst loc
+         on iv.stoloc = loc.stoloc
+      inner
+       join invmov im
+         on iv.subnum = im.lodnum
+      inner
+       join locmst loc2
+         on im.stoloc = loc2.stoloc
+      where loc.arecod = 'PICK'
+        and loc2.arecod = 'RESV'] catch(-1403)
+    |
+    if (@? = 0)
+    {
+        [delete
+           from invmov
+          where lodnum = @lodnum
+            and lodlvl = @lodlvl
+            and seqnum = @seqnum
+            and stoloc = @stoloc
+            and wh_id = @wh_id] catch(-1403)
+    }
+};
+{
+    [select distinct im.lodnum,
+            im.lodlvl,
+            im.seqnum,
+            im.stoloc,
+            im.wh_id
+       from inventory_view iv
+      inner
+       join locmst loc
+         on iv.stoloc = loc.stoloc
+      inner
+       join invmov im
+         on iv.lodnum = im.lodnum
+      inner
+       join locmst loc2
+         on im.stoloc = loc2.stoloc
+      where loc.arecod = 'RESV'
+        and loc2.arecod = 'PICK'] catch(-1403)
+    |
+    if (@? = 0)
+    {
+        [delete
+           from invmov
+          where lodnum = @lodnum
+            and lodlvl = @lodlvl
+            and seqnum = @seqnum
+            and stoloc = @stoloc
+            and wh_id = @wh_id] catch(-1403)
+    }
+};
+{
+    [select dtlnum
+       from inventory_view
+      where stoloc like 'PNDMONO-VEND%'
+        and stoloc <> 'PNDMONO-VEND-MIX'] catch(-1403)
+    |
+    if (@? = 0)
+    {
+        [delete
+           from invmov
+          where lodnum = @dtlnum
+            and stoloc = 'PNDMONO-VEND-MIX'] catch(-1403)
+    }
+}",$LESDIR/log/usr_invmov.log,,0,"",60,300,usr_data

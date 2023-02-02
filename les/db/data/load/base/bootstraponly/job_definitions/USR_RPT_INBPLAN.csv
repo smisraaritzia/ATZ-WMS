@@ -1,0 +1,93 @@
+job_id,role_id,name,enabled,type,command,log_file,trace_level,overlap,schedule,start_delay,timer,grp_nam
+USR_RPT_INBPLAN,,Aritzia Report - Inbound Plan,0,cron,"[select decode(rec_date, 0, '', format(rec_date, 'MM-dd-yyyy')) rec_date,
+        rec_time,
+        trlr_typ,
+        trkref,
+        trknum,
+        trlr_num,
+        po_num,
+        adrnam,
+        rcv_type,
+        tot_po_cases,
+        count(distinct prtnum) skus,
+        sum(expqty) units,
+        round(avg(untcas), 0) avg_unit_case,
+        sum(sku_pallet + pal_rem) resv_pal,
+        sum(cs_remaining) resv_case,
+        sum(CASE WHEN pal_rem > 0 THEN 1
+                 ELSE 0
+            END) AS pal_loc,
+        sum(CASE WHEN cs_remaining > 0 THEN 1
+                 ELSE 0
+            END) AS case_loc,
+        round(avg(CASE WHEN cs_remaining > 0 THEN cs_remaining
+                       ELSE NULL
+                  END), 1) AS avg_case
+   from (select cast(convert(varchar, substr(rec_date, 5, 2) || substr(rec_date, 1, 2), 12) || substr(rec_date, 3, 2) as datetime) rec_date,
+                rec_time,
+                trlr_typ,
+                trkref,
+                trknum,
+                trlr_num,
+                po_num,
+                adrnam,
+                rcv_type,
+                tot_po_cases,
+                prtnum,
+                expqty,
+                untcas,
+                caslen,
+                caswid,
+                cashgt,
+                p_tier,
+                p_height,
+                cs_pallet,
+                ftpcod,
+                floor(expqty * 1.0 / untcas * 1.0) as sku_case,
+                floor((floor(expqty * 1.0 / untcas) * 1.0 / cs_pallet)) as sku_pallet,
+                floor(expqty * 1.0 / untcas) - (floor((floor(expqty * 1.0 / untcas) / cs_pallet)) * 1.0 *cs_pallet) cs_remaining,
+                round((floor(expqty * 1.0 / untcas) - (floor((floor(expqty * 1.0 / untcas) / cs_pallet)) * 1.0 *cs_pallet)) / cs_pallet, 1) pal_ratio,
+                case when round((floor(expqty * 1.0 / untcas) - (floor((floor(expqty * 1.0 / untcas) / cs_pallet)) * 1.0 * cs_pallet)) / cs_pallet, 1) > .5 THEN 1
+                     else 0
+                end pal_rem
+           from (select case when tr.trlr_ref IS NULL then NULL
+                             else substr(trlr_ref, 0, instr(trlr_ref, ' '))
+                        end rec_date,
+                        case when tr.trlr_ref IS NULL then NULL
+                             else substr(trlr_ref, instr(trlr_ref, ' ') + 1)
+                        end rec_time,
+                        tr.trlr_typ,
+                        rt.trkref,
+                        rt.trknum,
+                        tr.trlr_num,
+                        ri.po_num,
+                        adr.adrnam,
+                        case when ri.invtyp = 'POP' then 'PRIVATE'
+                             when ri.invtyp = 'POB' then 'BRANDED'
+                        end rcv_type,
+                        rt.numcas tot_po_cases,
+                        rl.prtnum,
+                        rl.expqty,
+                        pv.untcas,
+                        caslen,
+                        caswid,
+                        cashgt,
+                        substr(pv.ftpcod, instr(pv.ftpcod, 'T') + 1, (instr(pv.ftpcod, 'H') -1) - instr(pv.ftpcod, 'T')) p_tier,
+                        substr(pv.ftpcod, instr(pv.ftpcod, 'H') + 1) p_height,
+                        convert(int, substr(pv.ftpcod, instr(pv.ftpcod, 'T') + 1, (instr(pv.ftpcod, 'H') -1) - instr(pv.ftpcod, 'T'))) * convert(int, substr(pv.ftpcod, instr(pv.ftpcod, 'H') + 1)) cs_pallet,
+                        floor(115000 / (caslen*caswid*cashgt)) cs_vol_pallet,
+                        pv.ftpcod
+                   from rcvtrk rt
+                   left
+                   join trlr tr
+                     on tr.trlr_id = rt.trlr_id
+                   left
+                   join rcvinv ri
+                     on ri.trknum = rt.trknum
+                   left
+                   join adrmst adr
+                     on adr.host_ext_id = ri.supnum
+                   left
+                   join rcvlin rl
+                     on rl.trknum = ri.trknum
+     ",$LESDIR/log/usr_rpt_inbplan.log,,0,"0 0 12,14,16 ? * * *",60,,usr_data
