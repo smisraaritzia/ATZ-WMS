@@ -1,0 +1,5 @@
+polcod,polvar,polval,wh_id_tmpl,srtseq,rtstr1,rtstr2,rtnum1,rtnum2,rtflt1,rtflt2,moddte,mod_usr_id,grp_nam
+DSS-ARITZIA,LABELS,ASN-CASE-GENERATION,----,1,,[select substring(@phy_subnum, 1, len(@phy_subnum) -1) act_subnum from dual] catch(-1403, 510),0,0,0,0,,SMISRA,usr_aritzia-7298
+DSS-ARITZIA,LABELS,ASN-LBL-PRINT-AFTER-CLOSE,----,1,,,0,0,0,0,,SMISRA,usr_aritzia-7298
+DSS-ARITZIA,LABELS,ASN-LBL-XREF,----,1,usrmixedskuasnlbl,,0,0,0,0,,SMISRA,usr_aritzia-7298
+DSS-ARITZIA,LABELS,ENABLE-ASN-MIXED-CASE,----,1,,,0,0,0,0,,SMISRA,usr_aritzia-7298
