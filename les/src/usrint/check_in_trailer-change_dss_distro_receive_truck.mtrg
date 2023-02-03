@@ -2,7 +2,7 @@
   <name>change_dss_distro_receive_truck</name>
   <on-command>check in trailer</on-command>
   <description />
-  <fire-sequence>9005</fire-sequence>
+  <fire-sequence>900</fire-sequence>
   <local-syntax>
 <![CDATA[
 /* Check Trailer Type */
@@ -99,8 +99,7 @@ if (@trlr_cod = 'RCV')
                   where polcod = 'DSS-ARITZIA'
                     and polvar = 'DISTRO'
                     and polval = 'INVTYP'
-                    and poldat_view.wh_id = nvl(@wh_id, @@wh_id)
-                    and rownum < 2) pd
+                    and poldat_view.wh_id = nvl(@wh_id, @@wh_id)) pd
              on pd.rtstr1 = rcvinv.invtyp
           where invdtl.distro_id is null
             and exists(select 1
