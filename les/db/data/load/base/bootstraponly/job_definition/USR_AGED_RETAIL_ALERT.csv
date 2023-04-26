@@ -1,0 +1,113 @@
+job_id,role_id,name,enabled,type,command,log_file,trace_level,overlap,schedule,start_delay,timer,grp_nam
+"USR_AGED_RETAIL_ALERT","","Aritzia Aged Retail Order Alert",0,"cron","list warehouses
+|
+[select ship_id || ' , ' || schbat || ' , ' || early_shpdte || ' , ' || carcod || ' , ' || srvlvl || ' , ' || orddsc string
+   from (select s.ship_id,
+                sl.schbat,
+                format(s.early_shpdte, 'MM-dd-yyyy') early_shpdte,
+                s.carcod,
+                s.srvlvl,
+                pv.orddsc
+           from shipment s
+          inner
+           join shipment_line sl
+             on s.ship_id = sl.ship_id
+          inner
+           join ord o
+             on sl.ordnum = o.ordnum
+            and sl.client_id = o.client_id
+            and sl.wh_id = o.wh_id
+          inner
+           join (select rtstr1 ordtyp,
+                        rtstr2 orddsc
+                   from poldat_view
+                  where polcod = 'DSS-ARITZIA'
+                    and polvar = 'REPORTING'
+                    and polval = 'ORDTYP-XREF'
+                    and rtstr2 not like '%ECOMM%'
+                    and rtstr2 not like '%MARKETPLACE%'
+                    and rtstr2 not like '%ORDER DELIVERY%'
+                    and rtstr2 not like '%BULK%') pv
+             on o.ordtyp = pv.ordtyp
+          where s.carcod = 'ATLAS'
+            and s.early_shpdte - (4 / 24) <= sysdate
+            and s.shpsts not in ('B', 'C')
+          group by s.ship_id,
+                sl.schbat,
+                s.early_shpdte,
+                s.carcod,
+                s.srvlvl,
+                pv.orddsc
+         union all
+         select s.ship_id,
+                sl.schbat,
+                format(s.early_shpdte, 'MM-dd-yyyy') early_shpdte,
+                s.carcod,
+                s.srvlvl,
+                pv.orddsc
+           from shipment s
+          inner
+           join shipment_line sl
+             on s.ship_id = sl.ship_id
+          inner
+           join ord o
+             on sl.ordnum = o.ordnum
+            and sl.client_id = o.client_id
+            and sl.wh_id = o.wh_id
+          inner
+           join (select rtstr1 ordtyp,
+                        rtstr2 orddsc
+                   from poldat_view
+                  where polcod = 'DSS-ARITZIA'
+                    and polvar = 'REPORTING'
+                    and polval = 'ORDTYP-XREF'
+                    and rtstr2 not like '%ECOMM%'
+                    and rtstr2 not like '%MARKETPLACE%'
+                    and rtstr2 not like '%ORDER DELIVERY%'
+                    and rtstr2 not like '%BULK%') pv
+             on o.ordtyp = pv.ordtyp
+          where s.carcod <> 'ATLAS'
+            and s.early_shpdte <= dateadd(day, datediff(day, 0, sysdate), 0)
+            and s.shpsts not in ('B', 'C')
+          group by s.ship_id,
+                sl.schbat,
+                s.early_shpdte,
+                s.carcod,
+                s.srvlvl,
+                pv.orddsc) usrdata
+  order by early_shpdte] catch(-1403) >> res
+|
+if (@? = 0)
+{
+    convert column results to string
+     where colnam = 'string'
+       and res = @res
+       and separator = '
+	   
+'
+    |
+    publish data
+     where data = @result_string
+       and hostname = 'azeus2smtp.jdadelivers.com'
+       and mail_from = 'ITWMS-' || @wh_id || 'Alerts @jdadelivers.com '
+       and send_to_list = ' supplychaintechteam @aritzia.com;
+    dcsupervisors @aritzia.com;
+    dcteamleaders @aritzia.com;
+    shipping @aritzia.com '
+    |
+    expand environment variable
+     where name = ' $' || @wh_id || 'outputs '
+    |
+    [select case when charindex(' DEV ', @value) > 0 then ' BY DEV '
+                 when charindex(' TST ', @value) > 0 then ' BY QA '
+                 else ' BY PROD '
+            end envdsc
+       from dual]
+    |
+    send email
+     where subject = ' Aged Retail Order Alert - Undispatced Orders Past Ship Date - ' || @envdsc
+       and hostname = @hostname
+       and mail_from = @mail_from
+       and send_to = @send_to_list
+       and message = ' SHIP ID, WAVE, SHIP DATE, CARRIER, SERVICE LEVEL, ORDER TYPE ' || '' || @data
+}","","",0,"5 0 19,20,21,22,23 ? * * *",60,0,""

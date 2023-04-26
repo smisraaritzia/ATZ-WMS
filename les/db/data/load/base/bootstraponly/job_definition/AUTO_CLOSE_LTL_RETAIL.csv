@@ -1,0 +1,6 @@
+job_id,role_id,name,enabled,type,command,log_file,trace_level,overlap,schedule,start_delay,timer,grp_nam
+"AUTO_CLOSE_LTL_RETAIL","","Automatically Load and Close LTL Retail",0,"cron","list warehouses
+|
+process dss ltl shipment auto load and close
+ where ordtyp_list = 'SR,MR,OT,SO,NFT,DCT,ECS,CUO,RTV,SC,ZRP'
+   and wh_id = @wh_id","","",0,"0 0/10 0-1,10-14,19-23 * * ?",0,0,""

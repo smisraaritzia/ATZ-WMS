@@ -1,0 +1,7 @@
+job_id,role_id,name,enabled,type,command,log_file,trace_level,overlap,schedule,start_delay,timer,grp_nam
+"AUTO_CLOSE_LTL_ECOM","","Automatically Load and Close LTL eCom",0,"cron","list warehouses
+|
+process dss ltl shipment auto load and close
+ where ordtyp_list = 'E01,E03,G01,G03,R01,R03,B03,S01,S03,P01,P03,I01,I03'
+   and wh_id = @wh_id
+","","",0,"0 0/5 5-23 ? * * *",0,0,""

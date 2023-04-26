@@ -1,0 +1,41 @@
+job_id,role_id,name,enabled,type,command,log_file,trace_level,overlap,schedule,start_delay,timer,grp_nam
+"USR_AUD_RATE","","Aritzia Audit Sampling Rate Update",0,"cron","[select rtstr1,
+        rtflt1,
+        wh_id
+   from poldat_view
+  where polcod = 'DSS-ARITZIA'
+    and polvar = 'AUDIT'
+    and polval = 'SAMPLING-RATE'
+    and rtstr1 in ('NP', 'HE', 'ECOM', 'RET')
+    and wh_id = 'DC03'] catch(@?)
+|
+if (@? = 0)
+{
+    [update poldat
+        set rtflt2 = @rtflt1,
+            rtflt1 = 0
+      where polcod = 'DSS-ARITZIA'
+        and polvar = 'AUDIT'
+        and polval = 'SAMPLING-RATE'
+        and wh_id_tmpl = @wh_id
+        and rtstr1 = @rtstr1] catch(@?)
+    |
+    if (@? = 0)
+    {
+        write output file
+         where filnam = 'audrate_update.log'
+           and data = sysdate || ',' || @rtstr1 || ' UPDATED FROM ' || @rtflt1 || ' TO 0'
+           and newline = 'Y'
+           and mode = 'A'
+           and path = '$LESDIR/log'
+    }
+    else
+    {
+        write output file
+         where filnam = 'audrate_update.log'
+           and data = sysdate || ',' || @rtstr1 || ',' || 'UPDATE FAILED'
+           and newline = 'Y'
+           and mode = 'A'
+           and path = '$LESDIR/log'
+    }
+};","","",0,"0 0 15 ? * 2-6 *",60,0,""

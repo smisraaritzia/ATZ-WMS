@@ -1,0 +1,87 @@
+job_id,role_id,name,enabled,type,command,log_file,trace_level,overlap,schedule,start_delay,timer,grp_nam
+"USR_TRLR_STAGE_US","","Aritzia Trailer Stage - US",0,"cron","list warehouses
+|
+expand environment variable
+ where name = '$' || @wh_id || 'outputs ' || ' \Glitched Order'
+|
+publish data
+ where path = @value
+|
+[select inv.lodnum,
+        inv.stoloc orgloc,
+        inv.dstloc,
+        o.ordtyp
+   from inventory_pckwrk_view inv
+  inner
+   join ord o
+     on inv.ordnum = o.ordnum
+  inner
+   join (select *
+           from poldat_view po
+          where po.polcod = 'DSS-ARITZIA'
+            and po.polvar = 'REPORTING'
+            and po.polval = 'ORDTYP-XREF'
+            and po.rtstr2 in ('USA ECOMM', 'USA MARKETPLACE', 'USA ORDER DELIVERY')
+            and po.wh_id = nvl(@wh_id, @@wh_id)) po
+     on o.ordtyp = po.rtstr1
+  where inv.stoloc like 'PNDTRLR-DDR%'
+  group by inv.lodnum,
+        inv.stoloc,
+        inv.dstloc,
+        o.ordtyp] catch(-1403)
+|
+if (@? = 0)
+{
+    move inventory
+     where wh_id = @wh_id
+       and newdst = 1
+       and lodnum = @lodnum
+       and dstloc = @dstloc catch(@?)
+    |
+    if (@? <> 0)
+    {
+        write output file
+         where filnam = ' staging_error_ca_ ' || to_char(sysdate, ' YYYYMMDD - HH24 ') || ' .csv '
+           and data = sysdate || ', ' || @lodnum || ', ' || ' Movement Failed '
+           and newline = ' Y '
+           and mode = ' A '
+           and path = @path
+    }
+    |
+    commit
+};
+expand environment variable
+ where name = '$' || @wh_id || 'outputs' || '\Glitched Order\staging_error_ca_' || to_char(sysdate, 'YYYYMMDD-HH24') || '.csv '
+|
+publish data
+ where resfil = @value
+|
+find file
+ where pathname = @resfil catch(@?)
+|
+if (@pathname = @resfil and @type = ' F ')
+{
+    list warehouses from host external id
+    |
+    expand environment variable
+     where name = '$' || @wh_id || 'outputs'
+    |
+    [select case when charindex(' DEV ', @value) > 0 then ' BY DEV '
+                 when charindex(' TST ', @value) > 0 then ' BY QA '
+                 else ' BY PROD '
+            end envdsc
+       from dual]
+    |
+    publish data
+     where hostname = ' azeus2smtp.jdadelivers.com '
+       and mail_from = 'ITWMS-' || @wh_id || 'Alerts@jdadelivers.com'
+       and send_to_list = 'supplychaintechteam @aritzia.com'
+    |
+    send email
+     where subject = 'Shipment Staging Failure Alert CA -' || @envdsc
+       and hostname = @hostname
+       and mail_from = @mail_from
+       and send_to = @send_to_list
+       and message = 'The following LPNs failed to be staged.'
+       and attachment = @resfil
+}","","",0,"0 45 16,18,19,20,21,22 ? * * *",0,0,""

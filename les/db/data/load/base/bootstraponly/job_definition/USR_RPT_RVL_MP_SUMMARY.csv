@@ -1,0 +1,63 @@
+job_id,role_id,name,enabled,type,command,log_file,trace_level,overlap,schedule,start_delay,timer,grp_nam
+"USR_RPT_RVL_MP_SUMMARY","","Aritzia Report - RVL Merch Pull Summary",0,"cron","/*RVL MP Order Drop by Day*/
+[SELECT to_char(rh.adddte, 'MM-DD-YYYY') create_date,
+        ISNULL(sum(CASE WHEN rh.invtyp = 'MP' THEN rl.expqty
+                   END), 0) AS mp_units,
+        ISNULL(sum(CASE WHEN rh.invtyp = 'NP' THEN rl.expqty
+                   END), 0) AS non_assor_units,
+        ISNULL(sum(CASE WHEN rh.invtyp = 'OS' THEN rl.expqty
+                   END), 0) AS overstock_units,
+        ISNULL(sum(CASE WHEN rh.invtyp IN ('MP', 'NP', 'OS') THEN rl.expqty
+                   END), 0) AS avl_inbound,
+        ISNULL(sum(CASE WHEN rh.invtyp IN ('MP', 'NP', 'OS') THEN rl.idnqty
+                   END), 0) AS avl_received,
+        ISNULL(sum(CASE WHEN rh.invtyp IN ('MP', 'NP', 'OS') THEN rl.expqty
+                   END) - sum(CASE WHEN rh.invtyp IN ('MP', 'NP', 'OS') THEN rl.idnqty
+                              END), 0) AS avl_intran,
+        ROUND(ISNULL(sum(CASE WHEN rh.invtyp IN ('MP', 'NP', 'OS') THEN CAST(rl.idnqty AS DECIMAL(12, 0))
+                         END) / sum(CASE WHEN rh.invtyp IN ('MP', 'NP', 'OS') THEN rl.expqty
+                                    END), 0), 3) *100 AS avl_perc_recv,
+        ISNULL(sum(CASE WHEN rh.invtyp = 'QM' THEN rl.expqty
+                   END), 0) AS qm_units,
+        ISNULL(sum(CASE WHEN rh.invtyp = 'QM' THEN rl.idnqty
+                   END), 0) AS qm_received,
+        ISNULL(sum(CASE WHEN rh.invtyp = 'QM' THEN rl.expqty
+                   END) - sum(CASE WHEN rh.invtyp = 'QM' THEN rl.idnqty
+                              END), 0) AS qm_intran,
+        ROUND(ISNULL(sum(CASE WHEN rh.invtyp = 'QM' THEN CAST(rl.idnqty AS DECIMAL(12, 0))
+                         END) / sum(CASE WHEN rh.invtyp = 'QM' THEN rl.expqty
+                                    END), 0), 3) *100 AS qm_perc_recv,
+        ISNULL(sum(CASE WHEN rh.invtyp = 'SR' THEN rl.expqty
+                   END), 0) AS sam_units,
+        ISNULL(sum(CASE WHEN rh.invtyp = 'SR' THEN rl.idnqty
+                   END), 0) AS sam_received,
+        ISNULL(sum(CASE WHEN rh.invtyp = 'SR' THEN rl.expqty
+                   END) - sum(CASE WHEN rh.invtyp = 'SR' THEN rl.idnqty
+                              END), 0) AS sam_intran,
+        ROUND(ISNULL(sum(CASE WHEN rh.invtyp = 'SR' THEN CAST(rl.idnqty AS DECIMAL(12, 0))
+                         END) / sum(CASE WHEN rh.invtyp = 'SR' THEN rl.expqty
+                                    END), 0), 3) *100 AS sam_perc_recv
+   FROM rimlin rl
+   LEFT
+   JOIN rimhdr rh
+     ON rh.invnum = rl.invnum
+  WHERE rh.adddte > to_char(sysdate -90, 'YYYYMMDD')
+    AND rh.invtyp IN ('MP', 'NP', 'OS', 'QM', 'SR')
+  GROUP BY to_char(rh.adddte, 'MM-DD-YYYY')
+  ORDER BY create_date desc] >> res
+|
+if (@? = 0)
+{
+    list warehouses
+    |
+    expand environment variable
+     where name = '$' || @wh_id || 'outputs' || '\RVL Merch Pull Summary'
+    |
+    publish data
+     where path = @value
+    |
+    write csv file
+     where resdata = @res
+       and filnam = 'rvl_mp_summary-' || to_char(sysdate, 'YYYYMMDD-hh24mi') || '.csv '
+       and path = @path
+}","","",0,"0 0 23 ? * * *",0,0,""

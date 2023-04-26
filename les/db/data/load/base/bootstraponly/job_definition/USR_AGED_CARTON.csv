@@ -1,0 +1,57 @@
+job_id,role_id,name,enabled,type,command,log_file,trace_level,overlap,schedule,start_delay,timer,grp_nam
+"USR_AGED_CARTON","","Aritzia Aged Packed Cartons Report (Obsolete)",0,"cron","list warehouses
+|
+expand environment variable
+ where name = '$' || @wh_id || 'outputs ' || ' \Aged Packed Cartons\Aged_Packed_Cartons ' || '_' || to_char(sysdate, ' YYYYMMDDHH24MISS ') || ' .csv '
+|
+publish data
+ where resfil = @name
+|
+[select distinct a.subnum,
+        b.mstdte,
+        a.subucc,
+        a.stoloc,
+        b.carcod,
+        b.srvlvl,
+        b.ordnum,
+        b.ship_id,
+        b.traknm
+   from inventory_view a
+   LEFT
+   join manfst b
+     on a.subnum = b.subnum
+  where stoloc like ' STN% '
+    and b.srvlvl <> ' RETURN '
+  order by b.mstdte DESC] catch(-1403) >> res
+|
+if (@? = 0)
+{
+    write csv file
+     where resdata = @res
+       and filnam = @resfil
+};
+expand environment variable
+ where name = '$' || @wh_id || 'outputs ' || ' \Aged Packed Cartons\Aged_Packed_Cartons ' || ' _ ' || to_char(sysdate, ' YYYYMMDDHH24MISS ') || ' .csv '
+|
+publish data
+ where resfil = @name
+|
+find file
+ where pathname = @resfil catch(@?)
+|
+if (@pathname = @resfil and @type = ' F ')
+{
+    publish data
+     where hostname = ' AZEUS2SMTP.JDADELIVERS.COM '
+       and mail_from = ' ITWMS - ' || @wh_id || 'Alerts@aritzia.com '
+       and send_to_list = ' supplychaintechteam @aritzia.com '
+    |
+    send email
+     where subject = ' Aged Packed Cartons '
+       and hostname = @hostname
+       and mail_from = @mail_from
+       and send_to = @send_to_list
+       and message = ' The following Cartons are packed
+       and are waiting to be moved to a Pallet '
+       and attachment = @resfil
+}","","",0,"0 15 5,12,23 ? * * *",60,0,""

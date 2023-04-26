@@ -1,0 +1,133 @@
+job_id,role_id,name,enabled,type,command,log_file,trace_level,overlap,schedule,start_delay,timer,grp_nam
+"USR_RPT_RVL_MP_DETAILS","","Aritzia Report - RVL Merch Pull Details by Item",0,"cron","list warehouses
+|
+[SELECT c.prtnum,
+        c.pull_date,
+        c.merch_catg,
+        c.exp_qty,
+        c.rec_qty,
+        c.rem_qty,
+        c.new_sku,
+        c.new_mp_sku,
+        c.new_sam_sku,
+        round(c.inb_vol, 0) inb_vol,
+        round(c.rem_inb_vol, 0) rem_inb_vol,
+        round(c.cur_vol, 0) cur_vol,
+        c.bin_type,
+        CASE WHEN c.rem_inb_vol + c.cur_vol <= 600 THEN 'XS'
+             WHEN c.rem_inb_vol + c.cur_vol <= 2399 THEN 'S'
+             WHEN c.rem_inb_vol + c.cur_vol <= 3500 THEN 'M'
+             WHEN c.rem_inb_vol + c.cur_vol <= 6400 THEN 'L'
+             WHEN c.rem_inb_vol + c.cur_vol <= 14000 THEN 'XL'
+             WHEN c.rem_inb_vol + c.cur_vol > 14000 THEN 'BULK'
+        END AS new_bin_type
+   FROM (SELECT b.prtnum,
+                b.pull_date,
+                pm.merch_catg,
+                b.exp_qty,
+                b.rec_qty,
+                b.rem_qty,
+                b.new_sku,
+                CASE WHEN b.new_sku = 1
+                 AND mp_sku = 1 THEN 1
+                     ELSE 0
+                END AS new_mp_sku,
+                CASE WHEN b.new_sku = 1
+                 AND mp_sku = 0
+                 AND sam_sku = 1 THEN 1
+                     ELSE 0
+                END AS new_sam_sku,
+                pv.untlen*pv.untwid*pv.unthgt*b.exp_qty AS inb_vol,
+                pv.untlen*pv.untwid*pv.unthgt*b.rem_qty AS rem_inb_vol,
+                cl.bin_type,
+                CASE WHEN cl.cur_vol IS NULL THEN 0
+                     ELSE cl.cur_vol
+                END AS cur_vol
+           FROM (SELECT a.prtnum,
+                        to_char(a.pull_date, 'YYYY-MM-DD') pull_date,
+                        a.oh_sku,
+                        CASE WHEN a.new_sku <> 0 THEN 1
+                             ELSE 0
+                        END AS new_sku,
+                        a.exp_qty,
+                        a.rec_qty,
+                        a.exp_qty - a.rec_qty rem_qty,
+                        CASE WHEN a.mp_sku > 0 THEN 1
+                             ELSE 0
+                        END AS mp_sku,
+                        CASE WHEN a.sam_sku > 0 THEN 1
+                             ELSE 0
+                        END AS sam_sku
+                   from (SELECT rl.prtnum,
+                                min(rh.adddte) pull_date,
+                                CASE WHEN sku_oh.prtnum IS NOT NULL THEN 1
+                                     ELSE 0
+                                END AS oh_sku,
+                                SUM(CASE WHEN sku_oh.prtnum IS NULL AND rl.expqty <> rl.idnqty THEN 1
+                                    END) AS new_sku,
+                                SUM(rl.expqty) exp_qty,
+                                SUM(rl.idnqty) rec_qty,
+                                SUM(CASE WHEN rh.invtyp IN ('MP', 'NP', 'OS') AND rl.expqty > 0 THEN 1
+                                    END) AS mp_sku,
+                                SUM(CASE WHEN rh.invtyp = 'SR' AND rl.expqty > 0 THEN 1
+                                    END) AS sam_sku
+                           FROM rimlin rl
+                           LEFT
+                           JOIN rimhdr rh
+                             ON rh.invnum = rl.invnum
+                           LEFT
+                           JOIN (SELECT distinct (prtnum)
+                                   FROM inventory_view iv
+                                  INNER
+                                   JOIN locmst lm
+                                     ON lm.stoloc = iv.stoloc
+                                  WHERE iv.invsts = 'AVL'
+                                    AND lm.arecod IN ('PICK', 'RESV')) sku_oh
+                             ON rl.prtnum = sku_oh.prtnum
+                          WHERE rh.adddte > to_char(sysdate -120, 'YYYYMMDD')
+                            AND rh.invtyp IN ('MP', 'NP', 'OS', 'SR')
+                          GROUP BY rl.prtnum,
+                                sku_oh.prtnum) a) b
+          INNER
+           JOIN dss_prtmst pm
+             ON pm.prtnum = b.prtnum
+          INNER
+           JOIN prtftp_view pv
+             ON pv.prtnum = b.prtnum
+           LEFT
+           JOIN (SELECT distinct (prtnum),
+                        max(CASE WHEN maxqvl >= 92000 THEN 'BULK'
+                                 WHEN maxqvl >= 14000 THEN 'XL'
+                                 WHEN maxqvl >= 6400 THEN 'L'
+                                 WHEN maxqvl >= 3500 THEN 'M'
+                                 WHEN maxqvl >= 2400 THEN 'S'
+                                 WHEN maxqvl >= 2399 THEN '5S'
+                                 WHEN maxqvl <= 600 THEN 'XS'
+                            END) AS bin_type,
+                        SUM(lm.curqvl) AS cur_vol
+                   FROM inventory_view iv
+                  INNER
+                   JOIN locmst lm
+                     ON lm.stoloc = iv.stoloc
+                  WHERE lm.arecod = 'PICK'
+                  GROUP BY prtnum) cl
+             ON cl.prtnum = b.prtnum
+          WHERE pv.wh_id = @wh_id
+            AND pm.wh_id = @wh_id
+            AND pv.defftp_flg = 1
+            AND b.rem_qty > 0) c
+  ORDER BY c.pull_date] >> res
+|
+if (@? = 0)
+{
+    expand environment variable
+     where name = '$' || @wh_id || 'outputs' || '\RVL Merch Pull Details by Item\'
+    |
+    publish data
+     where path = @value
+    |
+    write csv file
+     where resdata = @res
+       and filnam = 'rvl_mp_details-' || to_char(sysdate, 'YYYYMMDD-hh24mi') || '.csv'
+       and path = @path
+}","","",0,"0 0 23 ? * * *",60,0,""

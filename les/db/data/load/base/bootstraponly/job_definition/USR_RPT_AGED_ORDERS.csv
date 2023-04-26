@@ -1,0 +1,135 @@
+job_id,role_id,name,enabled,type,command,log_file,trace_level,overlap,schedule,start_delay,timer,grp_nam
+"USR_RPT_AGED_ORDERS","","Aritzia Report - Aged Orders (Hourly)",0,"cron","[/*#nolimit*/
+ SELECT (CONVERT(VARCHAR(10), o.adddte, 103)) order_drop_date,
+        CONVERT(VARCHAR(8), o.adddte, 108) order_drop_time,
+        o.ordnum order_number,
+        sh.carcod carrier,
+        sh.srvlvl service,
+        sl.schbat wave,
+        o.ordtyp order_type,
+        CASE WHEN pd.rtstr2 = 'USA ORDER DELIVERY' THEN 'US ECOMM'
+             WHEN pd.rtstr2 = 'USA MARKETPLACE' THEN 'US ECOMM'
+             WHEN pd.rtstr2 = 'USA ECOMM' THEN 'US ECOMM'
+             WHEN pd.rtstr2 = 'INT ECOMM' THEN 'US ECOM'
+             WHEN pd.rtstr2 = 'CAN ORDER DELIVERY' THEN 'CAN ECOMM'
+             WHEN pd.rtstr2 = 'CAN ECOMM' THEN 'CAN ECOMM'
+        END as channel,
+        sl.prtnum variant,
+        ip.pckqty requested_units,
+        ip.appqty picked_units,
+        ip.stoloc location,
+        CONVERT(VARCHAR(10), ip.lstdte, 103) activity_date,
+        CONVERT(VARCHAR(8), ip.lstdte, 108) activity_time,
+        CONVERT(VARCHAR(10), ip.prtdte, 103) print_date,
+        CONVERT(VARCHAR(8), ip.prtdte, 108) print_time,
+        ip.lodnum load_number,
+        ip.subnum sub_number,
+        sl.ship_id ship_number,
+        mft.traknm tracking_number,
+        CONVERT(VARCHAR(10), mft.mft_date, 103) manifest_date,
+        CONVERT(VARCHAR(8), mft.mft_time, 108) manifest_time,
+        CONVERT(VARCHAR(10), mft.ship_date, 103) shipping_date,
+        sh.shpsts ship_status
+   FROM ord o
+  inner
+   JOIN (select rtstr1,
+                rtstr2
+           from poldat pd
+          where pd.polcod = 'DSS-ARITZIA'
+            AND pd.polval = 'ORDTYP-XREF'
+            AND pd.rtstr2 IN ('USA ORDER DELIVERY', 'USA MARKETPLACE', 'USA ECOMM', 'INT ECOMM', 'CAN ORDER DELIVERY', 'CAN ECOMM')
+            and pd.wh_id_tmpl = '----') pd
+     ON pd.rtstr1 = o.ordtyp
+   LEFT
+   JOIN (SELECT sl.ordnum,
+                wh_id,
+                prt_client_id,
+                client_id,
+                ship_id,
+                ship_line_id,
+                prtnum,
+                schbat
+           FROM shipment_line sl
+          WHERE sl.moddte between to_char(sysdate - 14, 'YYYY-MM-DD')
+            AND to_char(sysdate + 1, 'YYYY-MM-DD')
+            and sl.linsts <> 'B'
+          group by sl.ordnum,
+                wh_id,
+                prt_client_id,
+                ship_id,
+                prtnum,
+                schbat,
+                client_id,
+                ship_line_id) sl
+     ON sl.ordnum = o.ordnum
+    and sl.wh_id = o.wh_id
+    and sl.client_id = o.client_id
+   LEFT
+   JOIN shipment sh
+     ON sh.ship_id = sl.ship_id
+   LEFT
+   JOIN inventory_pckwrk_view ip
+     ON ip.ship_line_id = sl.ship_line_id
+   LEFT
+   JOIN prtmst pt
+     ON pt.prtnum = sl.prtnum
+    AND pt.wh_id_tmpl = sl.wh_id
+    AND pt.prt_client_id = sl.prt_client_id
+   LEFT
+   JOIN (SELECT mft.ordnum,
+                mft.traknm,
+                mft.subnum,
+                mft.mstdte mft_date,
+                mft.shpdte ship_date,
+                mft.mstdte mft_time
+           from manfst mft
+          WHERE mft.srvlvl <> 'RETURN'
+            AND mft.mstdte between to_char(sysdate - 14, 'YYYY-MM-DD')
+            AND to_char(sysdate + 1, 'YYYY-MM-DD')) mft
+     ON o.ordnum = mft.ordnum
+    and ip.subnum = mft.subnum
+  WHERE o.adddte between to_char(sysdate - 14, 'YYYY-MM-DD')
+    AND to_char(sysdate + 1, 'YYYY-MM-DD')
+    and sh.shpsts NOT IN ('B', 'C', 'S')
+    AND pt.rcvflg = 1
+  group by o.adddte,
+        o.ordnum,
+        sh.carcod,
+        sh.srvlvl,
+        sl.schbat,
+        o.ordtyp,
+        pd.rtstr2,
+        sl.prtnum,
+        ip.pckqty,
+        ip.appqty,
+        ip.stoloc,
+        ip.lstdte,
+        ip .prtdte,
+        ip.lodnum,
+        ip.subnum,
+        sl.ship_id,
+        mft.traknm,
+        mft.mft_date,
+        mft.mft_time,
+        mft.ship_date,
+        sh.shpsts
+  ORDER BY order_drop_date,
+        order_drop_time,
+        o.ordnum,
+        sl.prtnum] >> res
+|
+if (@? = 0)
+{
+    list warehouses
+    |
+    expand environment variable
+     where name = '$' || @wh_id || 'outputs' || '\Aged Orders\'
+    |
+    publish data
+     where path = @value
+    |
+    write csv file
+     where resdata = @res
+       and filnam = 'aged_orders-' || to_char(sysdate, 'YYYYMMDD-hh24mi') || '.csv'
+       and path = @path
+}","","",0,"0 0 0,5,6,7,8,9,10,11,12,13,14,15,16,17,18,19,20,21,22,23 ? * * *",0,0,""

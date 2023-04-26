@@ -1,0 +1,62 @@
+job_id,role_id,name,enabled,type,command,log_file,trace_level,overlap,schedule,start_delay,timer,grp_nam
+"USR_PIC_LOC_LOG","","Aritzia PIC Hourly Location Log",0,"cron","list warehouses
+|
+[/*#nolimit*/
+ select loc.arecod area,
+        loc.stoloc,
+        loc.wrk_zone_id,
+        loc.locacc,
+        loc.curqvl,
+        loc.maxqvl,
+        nvl(invlst.article, '-') article,
+        nvl(invlst.invsts, '-') invsts,
+        nvl(invlst.untqty, 0) untqty,
+        nvl(invlst.cascnt, 0) cascnt
+   from locmst loc
+  inner
+   join loc_typ lt
+     on loc.loc_typ_id = lt.loc_typ_id
+   left outer
+   join (select iv.stoloc,
+                iv.prtnum article,
+                iv.invsts,
+                count(distinct iv.subnum) cascnt,
+                sum(iv.untqty) untqty
+           from inventory_view iv
+          inner
+           join locmst loc
+             on iv.stoloc = loc.stoloc
+          inner
+           join loc_typ lt
+             on loc.loc_typ_id = lt.loc_typ_id
+          where iv.ship_line_id is 
+            and loc.useflg = 1
+            and lt.sigflg = 1
+            and loc.wh_id = @wh_id
+            and iv.invsts not in ('WHS', 'DON', 'QM', 'DES', 'RTV')
+          group by iv.prtnum,
+                iv.stoloc,
+                iv.invsts) invlst
+     on invlst.stoloc = loc.stoloc
+  inner
+   join aremst am
+     on loc.arecod = am.arecod
+    and loc.wh_id = am.wh_id
+  where loc.useflg = 1
+    and lt.sigflg = 1
+    and loc.wh_id = @wh_id
+  order by loc.stoloc,
+        loc.locacc,
+        loc.curqvl,
+        loc.maxqvl] >> res
+|
+expand environment variable
+ where name = '$' || @wh_id || 'outputs ' || ' \Physical Inventory\ '
+|
+publish data
+ where path = @value
+|
+write csv file
+ where resdata = @res
+   and filnam = ' inv_location - ' || to_char(sysdate, ' YYYYMMDD - HH24MISS ') || ' .csv '
+   and path = @path","","",0,"0 10 6-23 4,5,6 2 ? 2022",0,0,""
