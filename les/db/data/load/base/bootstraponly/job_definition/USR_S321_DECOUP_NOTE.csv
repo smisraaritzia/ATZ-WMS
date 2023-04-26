@@ -1,0 +1,115 @@
+job_id,role_id,name,enabled,type,command,log_file,trace_level,overlap,schedule,start_delay,timer,grp_nam
+"USR_S321_DECOUP_NOTE","","Aritzia Decoupled Note Bandaid (Obsolete)",0,"cron","/* Note Text Bandaid */
+list warehouses
+|
+[select distinct olnt.ordnum
+   from ord_line_note olnt
+   left outer
+   join ord_note ont
+     on olnt.ordnum = ont.ordnum
+    and ont.nottyp = 'PAK_DECOUPLE'
+  where olnt.nottyp = 'PAK_DECOUPLE'
+    and ont.ordnum is ] catch(@?)
+|
+if (@? = 0)
+{
+    [insert
+       into ord_note(client_id, ordnum, nottyp, notlin, wh_id, nottxt, edtflg, u_version, ins_dt, last_upd_dt, ins_user_id, last_upd_user_id)
+     values ('----', @ordnum, 'PAK_DECOUPLE', '0010', @wh_id, 'REMOVE PRICE FROM STOCK TICKET ? DECOUPLED ITEM(S)', '1', '1', sysdate, sysdate, 'USR_SYSJOB', 'USR_SYSJOB')] catch(@?)
+    |
+    [select ol.ordnum,
+            to_char(ol.prtnum || ',' || pcd.prtcolor_dsc || ',' || psd.prtsize_dsc) nottxt,
+            lpad(to_number(ol.ordlin) + 100, 4, 0) ordlin
+       from ord_line_note oln
+      inner
+       join ord_line ol
+         on oln.ordnum = ol.ordnum
+        and oln.ordlin = ol.ordlin
+        and oln.ordsln = ol.ordsln
+      inner
+       join prtdsc pd
+         on pd.colnam = 'prtnum|prt_client_id|wh_id_tmpl'
+        and pd.colval = ol.prtnum || '|' || ol.prt_client_id || '|' || ol.wh_id
+        and pd.locale_id = nvl(@locale_id, @@locale_id)
+      inner
+       join prtmst pm
+         on ol.prtnum = pm.prtnum
+        and ol.wh_id = pm.wh_id_tmpl
+        and ol.prt_client_id = pm.prt_client_id
+      inner
+       join (select colval prtcolor,
+                    lngdsc prtcolor_dsc
+               from dscmst
+              where colnam = 'prtcolor'
+                and locale_id = 'US_ENGLISH') pcd
+         on pm.prtcolor = pcd.prtcolor
+      inner
+       join (select colval prtsize,
+                    lngdsc prtsize_dsc
+               from dscmst
+              where colnam = 'prtsize'
+                and locale_id = 'US_ENGLISH') psd
+         on pm.prtsize = psd.prtsize
+      where oln.ordnum = @ordnum] catch(@?)
+    |
+    [insert
+       into ord_note(client_id, ordnum, nottyp, notlin, wh_id, nottxt, edtflg, u_version, ins_dt, last_upd_dt, ins_user_id, last_upd_user_id)
+     values ('----', @ordnum, 'PAK_DECOUPLE', @ordlin, @wh_id, @nottxt, '1', '1', sysdate, sysdate, 'USR_SYSJOB', 'USR_SYSJOB')] catch(@?)
+}","","",0,"0 0/15 4-23 ? * * *",0,0,""
+"USR_S321_DECOUP_NOTE","","Aritzia Decoupled Note Bandaid (Obsolete)",0,"cron","/* Note Text Bandaid */
+list warehouses
+|
+[select distinct olnt.ordnum
+   from ord_line_note olnt
+   left outer
+   join ord_note ont
+     on olnt.ordnum = ont.ordnum
+    and ont.nottyp = 'PAK_DECOUPLE'
+  where olnt.nottyp = 'PAK_DECOUPLE'
+    and ont.ordnum is ] catch(@?)
+|
+if (@? = 0)
+{
+    [insert
+       into ord_note(client_id, ordnum, nottyp, notlin, wh_id, nottxt, edtflg, u_version, ins_dt, last_upd_dt, ins_user_id, last_upd_user_id)
+     values ('----', @ordnum, 'PAK_DECOUPLE', '0010', @wh_id, 'REMOVE PRICE FROM STOCK TICKET ? DECOUPLED ITEM(S)', '1', '1', sysdate, sysdate, 'USR_SYSJOB', 'USR_SYSJOB')] catch(@?)
+    |
+    [select ol.ordnum,
+            to_char(ol.prtnum || ',' || pcd.prtcolor_dsc || ',' || psd.prtsize_dsc) nottxt,
+            lpad(to_number(ol.ordlin) + 100, 4, 0) ordlin
+       from ord_line_note oln
+      inner
+       join ord_line ol
+         on oln.ordnum = ol.ordnum
+        and oln.ordlin = ol.ordlin
+        and oln.ordsln = ol.ordsln
+      inner
+       join prtdsc pd
+         on pd.colnam = 'prtnum|prt_client_id|wh_id_tmpl'
+        and pd.colval = ol.prtnum || '|' || ol.prt_client_id || '|' || ol.wh_id
+        and pd.locale_id = nvl(@locale_id, @@locale_id)
+      inner
+       join prtmst pm
+         on ol.prtnum = pm.prtnum
+        and ol.wh_id = pm.wh_id_tmpl
+        and ol.prt_client_id = pm.prt_client_id
+      inner
+       join (select colval prtcolor,
+                    lngdsc prtcolor_dsc
+               from dscmst
+              where colnam = 'prtcolor'
+                and locale_id = 'US_ENGLISH') pcd
+         on pm.prtcolor = pcd.prtcolor
+      inner
+       join (select colval prtsize,
+                    lngdsc prtsize_dsc
+               from dscmst
+              where colnam = 'prtsize'
+                and locale_id = 'US_ENGLISH') psd
+         on pm.prtsize = psd.prtsize
+      where oln.ordnum = @ordnum] catch(@?)
+    |
+    [insert
+       into ord_note(client_id, ordnum, nottyp, notlin, wh_id, nottxt, edtflg, u_version, ins_dt, last_upd_dt, ins_user_id, last_upd_user_id)
+     values ('----', @ordnum, 'PAK_DECOUPLE', @ordlin, @wh_id, @nottxt, '1', '1', sysdate, sysdate, 'USR_SYSJOB', 'USR_SYSJOB')] catch(@?)
+}","","",0,"0 0/15 4-23 ? * * *",0,0,""

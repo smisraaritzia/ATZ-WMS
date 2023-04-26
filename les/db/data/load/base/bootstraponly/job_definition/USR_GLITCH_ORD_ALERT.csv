@@ -1,0 +1,233 @@
+job_id,role_id,name,enabled,type,command,log_file,trace_level,overlap,schedule,start_delay,timer,grp_nam
+"USR_GLITCH_ORD_ALERT","","Aritzia Glitched Order Alert",0,"cron","list warehouses
+|
+{
+    [select s.ship_id
+       from inventory_view iv
+      inner
+       join shipment_line sl
+         on iv.ship_line_id = sl.ship_line_id
+      inner
+       join shipment s
+         on sl.ship_id = s.ship_id
+      where iv.stoloc like 'STGSHIP%'
+        and s.shpsts <> 'S'
+      group by s.ship_id] catch(@?)
+    |
+    if (@? = 0)
+    {
+        /* no unstaged inventory */
+        [select distinct 'x'
+           from shipment_line sl
+          inner
+           join inventory_view iv
+             on sl.ship_line_id = iv.ship_line_id
+          where sl.ship_id = @ship_id
+            and iv.stoloc not like 'STGSHIP%'] catch(@?)
+        |
+        if (@? = -1403)
+        {
+            /* no outstanding replen */
+            [select distinct 'x'
+               from rplwrk
+              where ship_id = @ship_id] catch(@?)
+            |
+            if (@? = -1403)
+            {
+                /* no outstanding picks */
+                [select distinct 'x'
+                   from pckwrk_view pw
+                  where wrktyp in ('P', 'B')
+                    and ship_id = @ship_id
+                    and appqty < pckqty] catch(@?)
+                |
+                if (@? = -1403)
+                {
+                    check ok to stage shipment
+                     where ship_id = @ship_id catch(@?)
+                    |
+                    if (@? = 0)
+                    {
+                        write output file
+                         where filnam = 'usr_glitch_ord_list.log'
+                           and data = sysdate || ',' || @ship_id || ',' || 'Attempting to stage shipment.'
+                           and newline = 'Y'
+                           and mode = 'A'
+                           and path = '$LESDIR/log'
+                        |
+                        register shipment staged
+                         where ship_id = @ship_id
+                           and rstg_flg = @rstg_flg
+                    }
+                    else
+                    {
+                        publish data
+                         where ship_id = @ship_id >> res
+                        |
+                        expand environment variable
+                         where name = '$' || @wh_id || 'outputs ' || ' \Glitched Order\ '
+                        |
+                        publish data
+                         where path = @value
+                        |
+                        write csv file
+                         where resdata = @res
+                           and filnam = ' Gltiched_order ' || to_char(sysdate, ' YYYYMMDD - HH24 ') || ' .csv '
+                           and path = @path
+                    }
+                }
+            }
+        }
+    }
+};
+list warehouses
+|
+expand environment variable
+ where name = ' $' || @wh_id || 'outputs ' || ' \Glitched Order\Gltiched_order ' || to_char(sysdate, ' YYYYMMDD - HH24 ') || ' .csv '
+|
+publish data
+ where resfil = @value
+|
+find file
+ where pathname = @resfil catch(@?)
+|
+if (@pathname = @resfil and @type = ' F ')
+{
+    expand environment variable
+     where name = ' $' || @wh_id || 'outputs '
+    |
+    [select case when charindex(' DEV ', @value) > 0 then ' BY DEV '
+                 when charindex(' TST ', @value) > 0 then ' BY QA '
+                 else ' BY PROD '
+            end envdsc
+       from dual]
+    |
+    publish data
+     where hostname = ' azeus2smtp.jdadelivers.com '
+       and mail_from = ' ITWMS - ' || @wh_id || ' Alerts @jdadelivers.com '
+       and send_to_list = ' supplychaintechteam @aritzia.com '
+    |
+    send email
+     where subject = ' Glitched Order Alert - ' || @envdsc
+       and hostname = @hostname
+       and mail_from = @mail_from
+       and send_to = @send_to_list
+       and message = ' Attached orders were staged but are glitched. Please see attached.'
+       and attachment = @resfil
+}","","",0,"0 5 6-23/2 ? * 1-7 *",0,0,""
+"USR_GLITCH_ORD_ALERT","","Aritzia Glitched Order Alert",0,"cron","list warehouses
+|
+{
+    [select s.ship_id
+       from inventory_view iv
+      inner
+       join shipment_line sl
+         on iv.ship_line_id = sl.ship_line_id
+      inner
+       join shipment s
+         on sl.ship_id = s.ship_id
+      where iv.stoloc like 'STGSHIP%'
+        and s.shpsts <> 'S'
+      group by s.ship_id] catch(@?)
+    |
+    if (@? = 0)
+    {
+        /* no unstaged inventory */
+        [select distinct 'x'
+           from shipment_line sl
+          inner
+           join inventory_view iv
+             on sl.ship_line_id = iv.ship_line_id
+          where sl.ship_id = @ship_id
+            and iv.stoloc not like 'STGSHIP%'] catch(@?)
+        |
+        if (@? = -1403)
+        {
+            /* no outstanding replen */
+            [select distinct 'x'
+               from rplwrk
+              where ship_id = @ship_id] catch(@?)
+            |
+            if (@? = -1403)
+            {
+                /* no outstanding picks */
+                [select distinct 'x'
+                   from pckwrk_view pw
+                  where wrktyp in ('P', 'B')
+                    and ship_id = @ship_id
+                    and appqty < pckqty] catch(@?)
+                |
+                if (@? = -1403)
+                {
+                    check ok to stage shipment
+                     where ship_id = @ship_id catch(@?)
+                    |
+                    if (@? = 0)
+                    {
+                        write output file
+                         where filnam = 'usr_glitch_ord_list.log'
+                           and data = sysdate || ',' || @ship_id || ',' || 'Attempting to stage shipment.'
+                           and newline = 'Y'
+                           and mode = 'A'
+                           and path = '$LESDIR/log'
+                        |
+                        register shipment staged
+                         where ship_id = @ship_id
+                           and rstg_flg = @rstg_flg
+                    }
+                    else
+                    {
+                        publish data
+                         where ship_id = @ship_id >> res
+                        |
+                        expand environment variable
+                         where name = '$' || @wh_id || 'outputs ' || ' \Glitched Order\ '
+                        |
+                        publish data
+                         where path = @value
+                        |
+                        write csv file
+                         where resdata = @res
+                           and filnam = ' Gltiched_order ' || to_char(sysdate, ' YYYYMMDD - HH24 ') || ' .csv '
+                           and path = @path
+                    }
+                }
+            }
+        }
+    }
+};
+list warehouses
+|
+expand environment variable
+ where name = ' $' || @wh_id || 'outputs ' || ' \Glitched Order\Gltiched_order ' || to_char(sysdate, ' YYYYMMDD - HH24 ') || ' .csv '
+|
+publish data
+ where resfil = @value
+|
+find file
+ where pathname = @resfil catch(@?)
+|
+if (@pathname = @resfil and @type = ' F ')
+{
+    expand environment variable
+     where name = ' $' || @wh_id || 'outputs '
+    |
+    [select case when charindex(' DEV ', @value) > 0 then ' BY DEV '
+                 when charindex(' TST ', @value) > 0 then ' BY QA '
+                 else ' BY PROD '
+            end envdsc
+       from dual]
+    |
+    publish data
+     where hostname = ' azeus2smtp.jdadelivers.com '
+       and mail_from = ' ITWMS - ' || @wh_id || ' Alerts @jdadelivers.com '
+       and send_to_list = ' supplychaintechteam @aritzia.com '
+    |
+    send email
+     where subject = ' Glitched Order Alert - ' || @envdsc
+       and hostname = @hostname
+       and mail_from = @mail_from
+       and send_to = @send_to_list
+       and message = ' Attached orders were staged but are glitched. Please see attached.'
+       and attachment = @resfil
+}","","",0,"0 5 6-23/2 ? * 1-7 *",0,0,""

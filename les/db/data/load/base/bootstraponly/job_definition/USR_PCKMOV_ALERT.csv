@@ -1,0 +1,165 @@
+job_id,role_id,name,enabled,type,command,log_file,trace_level,overlap,schedule,start_delay,timer,grp_nam
+"USR_PCKMOV_ALERT","","Aritzia Pick Move Issue Alert",0,"cron","{
+    list warehouses
+    |
+    [select distinct iv.ship_id,
+            s.shpsts,
+            s.carcod,
+            s.srvlvl,
+            s.early_shpdte,
+            s.stgdte,
+            iv.stoloc,
+            iv.lodnum,
+            iv.subnum
+       from inventory_pckwrk_view iv
+      inner
+       join locmst loc
+         on iv.stoloc = loc.stoloc
+        and iv.wh_id = loc.wh_id
+      inner
+       join loc_typ lt
+         on loc.loc_typ_id = lt.loc_typ_id
+      inner
+       join shipment s
+         on iv.ship_id = s.ship_id
+       left outer
+       join pckmov pm
+         on iv.cmbcod = pm.cmbcod
+        and pm.mov_zone_id = '10017'
+        and pm.rescod is not 
+        and pm.stoloc is not 
+      where iv.ship_line_id is not 
+        and lt.fwiflg = 1
+        and pm.cmbcod is ] catch(-1403) >> res
+    |
+    if (@? = 0)
+    {
+        expand environment variable
+         where name = '$' || @wh_id || 'outputs ' || ' \Glitched Order\ '
+        |
+        publish data
+         where path = @value
+        |
+        write csv file
+         where resdata = @res
+           and filnam = ' staging_pckmov_ ' || to_char(sysdate, ' YYYYMMDD - HH24 ') || ' .csv '
+           and path = @path
+    }
+};
+list warehouses
+|
+expand environment variable
+ where name = ' $' || @wh_id || 'outputs ' || ' \Glitched Order\staging_pckmov_ ' || to_char(sysdate, ' YYYYMMDD - HH24 ') || ' .csv '
+|
+publish data
+ where resfil = @value
+|
+find file
+ where pathname = @resfil catch(@?)
+|
+if (@pathname = @resfil and @type = ' F ')
+{
+    expand environment variable
+     where name = ' $'$' || @wh_id || 'outputs' '
+    |
+    [select case when charindex(' DEV ', @value) > 0 then ' BY DEV '
+                 when charindex(' TST ', @value) > 0 then ' BY QA '
+                 else ' BY PROD '
+            end envdsc
+       from dual]
+    |
+    publish data
+     where hostname = ' azeus2smtp.jdadelivers.com '
+       and mail_from = ' ITWMS - ' || @wh_id || 'Alerts @jdadelivers.com '
+ and send_to_list = ' supplychaintechteam @aritzia.com '
+    |
+    send email
+     where subject = ' Staging Error Alert - ' || @envdsc
+       and hostname = @hostname
+       and mail_from = @mail_from
+       and send_to = @send_to_list
+       and message = ' Attached cartons have pckmov entry issues. Please see attached.'
+       and attachment = @resfil
+}","","",0,"0 0 6-23 ? * 2-6 *",0,0,""
+"USR_PCKMOV_ALERT","","Aritzia Pick Move Issue Alert",0,"cron","{
+    list warehouses
+    |
+    [select distinct iv.ship_id,
+            s.shpsts,
+            s.carcod,
+            s.srvlvl,
+            s.early_shpdte,
+            s.stgdte,
+            iv.stoloc,
+            iv.lodnum,
+            iv.subnum
+       from inventory_pckwrk_view iv
+      inner
+       join locmst loc
+         on iv.stoloc = loc.stoloc
+        and iv.wh_id = loc.wh_id
+      inner
+       join loc_typ lt
+         on loc.loc_typ_id = lt.loc_typ_id
+      inner
+       join shipment s
+         on iv.ship_id = s.ship_id
+       left outer
+       join pckmov pm
+         on iv.cmbcod = pm.cmbcod
+        and pm.mov_zone_id = '10017'
+        and pm.rescod is not 
+        and pm.stoloc is not 
+      where iv.ship_line_id is not 
+        and lt.fwiflg = 1
+        and pm.cmbcod is ] catch(-1403) >> res
+    |
+    if (@? = 0)
+    {
+        expand environment variable
+         where name = '$' || @wh_id || 'outputs ' || ' \Glitched Order\ '
+        |
+        publish data
+         where path = @value
+        |
+        write csv file
+         where resdata = @res
+           and filnam = ' staging_pckmov_ ' || to_char(sysdate, ' YYYYMMDD - HH24 ') || ' .csv '
+           and path = @path
+    }
+};
+list warehouses
+|
+expand environment variable
+ where name = ' $' || @wh_id || 'outputs ' || ' \Glitched Order\staging_pckmov_ ' || to_char(sysdate, ' YYYYMMDD - HH24 ') || ' .csv '
+|
+publish data
+ where resfil = @value
+|
+find file
+ where pathname = @resfil catch(@?)
+|
+if (@pathname = @resfil and @type = ' F ')
+{
+    expand environment variable
+     where name = ' $'$' || @wh_id || 'outputs' '
+    |
+    [select case when charindex(' DEV ', @value) > 0 then ' BY DEV '
+                 when charindex(' TST ', @value) > 0 then ' BY QA '
+                 else ' BY PROD '
+            end envdsc
+       from dual]
+    |
+    publish data
+     where hostname = ' azeus2smtp.jdadelivers.com '
+       and mail_from = ' ITWMS - ' || @wh_id || 'Alerts @jdadelivers.com '
+ and send_to_list = ' supplychaintechteam @aritzia.com '
+    |
+    send email
+     where subject = ' Staging Error Alert - ' || @envdsc
+       and hostname = @hostname
+       and mail_from = @mail_from
+       and send_to = @send_to_list
+       and message = ' Attached cartons have pckmov entry issues. Please see attached.'
+       and attachment = @resfil
+}","","",0,"0 0 6-23 ? * 2-6 *",0,0,""

@@ -1,0 +1,11 @@
+job_id,role_id,name,enabled,type,command,log_file,trace_level,overlap,schedule,start_delay,timer,grp_nam
+"AUTO_CLOSE_LTL_US_RETAIL","","Automatically Load and Close LTL US Retail",0,"cron","list warehouses
+|
+process dss ltl shipment auto load and close
+ where ordtyp_list = 'USR,UNF,UUO,UOT'
+   and wh_id = @wh_id","","",0,"0 0/10 10-13,17-20 * * ?",0,0,""
+"AUTO_CLOSE_LTL_US_RETAIL","","Automatically Load and Close LTL US Retail",0,"cron","list warehouses
+|
+process dss ltl shipment auto load and close
+ where ordtyp_list = 'USR,UNF,UUO,UOT'
+   and wh_id = @wh_id","","",0,"0 0/10 10-13,17-20 * * ?",0,0,""

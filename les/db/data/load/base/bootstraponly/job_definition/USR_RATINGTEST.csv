@@ -1,0 +1,85 @@
+job_id,role_id,name,enabled,type,command,log_file,trace_level,overlap,schedule,start_delay,timer,grp_nam
+"USR_RATINGTEST","","Aritzia Temp Parcel Rate Test",0,"timer","list warehouses
+|
+[select top 1 iv.subnum
+   from inventory_pckwrk_view iv
+  inner
+   join shipment s
+     on iv.ship_id = s.ship_id
+  where iv.subnum like 'SHP%'
+    and s.carcod = 'FDXAIRCAN'
+    and s.srvlvl = '3DAIR8P'
+    and (iv.stoloc = 'PNDSHIP-01' or iv.stoloc like 'STN%STG')
+  group by iv.subnum] catch(-1403)
+|
+if (@? = 0)
+{
+    rate pm package
+     WHERE weight = 1.6
+       AND height = 0.75
+       AND length = 14
+       AND width = 10
+       AND ltlcls = ''
+       AND pakval = ''
+       AND stname = 'FAKE RATING'
+       AND stadd1 = '415 Boyne Street'
+       AND stcity = 'New Westminster'
+       AND ststcd = 'BC'
+       AND stposc = 'V3M5K2'
+       AND stphon = '7783312240'
+       AND carcod = 'FDXAIRCAN'
+       AND srvlvl = '3DAIR8P'
+       AND stcnty = 'CAN'
+       AND strsaf = 0
+       AND wh_id = @wh_id
+       AND dry_ice_wgt = ''
+       AND dry_ice_flg = 0
+       AND cod_ind_type = 0
+       AND pkgcod = ''
+       AND paytrm = 'PRD'
+       AND carsrv_param_list = 
+       AND shpdte = '20210420000000'
+       and invtid = @subnum catch(@?)
+}","","",0,"",60,20,""
+"USR_RATINGTEST","","Aritzia Temp Parcel Rate Test",0,"timer","list warehouses
+|
+[select top 1 iv.subnum
+   from inventory_pckwrk_view iv
+  inner
+   join shipment s
+     on iv.ship_id = s.ship_id
+  where iv.subnum like 'SHP%'
+    and s.carcod = 'FDXAIRCAN'
+    and s.srvlvl = '3DAIR8P'
+    and (iv.stoloc = 'PNDSHIP-01' or iv.stoloc like 'STN%STG')
+  group by iv.subnum] catch(-1403)
+|
+if (@? = 0)
+{
+    rate pm package
+     WHERE weight = 1.6
+       AND height = 0.75
+       AND length = 14
+       AND width = 10
+       AND ltlcls = ''
+       AND pakval = ''
+       AND stname = 'FAKE RATING'
+       AND stadd1 = '415 Boyne Street'
+       AND stcity = 'New Westminster'
+       AND ststcd = 'BC'
+       AND stposc = 'V3M5K2'
+       AND stphon = '7783312240'
+       AND carcod = 'FDXAIRCAN'
+       AND srvlvl = '3DAIR8P'
+       AND stcnty = 'CAN'
+       AND strsaf = 0
+       AND wh_id = @wh_id
+       AND dry_ice_wgt = ''
+       AND dry_ice_flg = 0
+       AND cod_ind_type = 0
+       AND pkgcod = ''
+       AND paytrm = 'PRD'
+       AND carsrv_param_list = 
+       AND shpdte = '20210420000000'
+       and invtid = @subnum catch(@?)
+}","","",0,"",60,20,""

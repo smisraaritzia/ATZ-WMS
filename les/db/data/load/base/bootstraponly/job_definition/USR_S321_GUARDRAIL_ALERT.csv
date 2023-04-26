@@ -1,0 +1,277 @@
+job_id,role_id,name,enabled,type,command,log_file,trace_level,overlap,schedule,start_delay,timer,grp_nam
+"USR_S321_GUARDRAIL_ALERT","","Aritzia S321 Guardrail Alert",0,"cron","list warehouses
+|
+{
+    expand environment variable
+     where name = '$' || @wh_id || 'outputs' || '\S321 Alert\'
+    |
+    publish data
+     where path = @value
+    |
+    [select first_name,
+            last_name,
+            zip,
+            ordnum,
+            ref_doc,
+            adddte,
+            shpdte,
+            lst_ord,
+            diff,
+            ordcnt,
+            carcod,
+            srvlvl,
+            schbat,
+            nottxt,
+            notusr
+       from (select TOP 100 PERCENT first_name,
+                    last_name,
+                    zip,
+                    ordnum,
+                    ref_doc,
+                    adddte,
+                    shpdte,
+                    lst_ord,
+                    diff,
+                    ordcnt,
+                    min(diff) over(partition by first_name || last_name || zip) min_diff,
+                    carcod,
+                    srvlvl,
+                    schbat,
+                    nottxt,
+                    notusr
+               from (select TOP 100 PERCENT adr.first_name,
+                            adr.last_name,
+                            substr(adr.adrpsz, 1, 5) zip,
+                            o.ordnum,
+                            uo.ref_doc,
+                            o.adddte,
+                            nvl(s.early_shpdte, convert(date, dateadd(hour, 12, o.adddte))) shpdte,
+                            convert(date, lag(nvl(s.early_shpdte, convert(date, dateadd(hour, 12, o.adddte))), 1) over(partition by adr.first_name || adr.last_name || substr(adr.adrpsz, 1, 5)
+                                                                                                                        order by o.adddte)) lst_ord,
+                            datediff(hour, lag(nvl(s.early_shpdte, convert(date, dateadd(hour, 12, o.adddte))), 1) over(partition by adr.first_name || adr.last_name || substr(adr.adrpsz, 1, 5)
+                                                                                                                         order by o.adddte), (nvl(s.early_shpdte, convert(date, dateadd(hour, 12, o.adddte))))) diff,
+                            count(*) over(partition by adr.first_name || adr.last_name || substr(adr.adrpsz, 1, 5)) ordcnt,
+                            ol.carcod,
+                            ol.srvlvl,
+                            sl.schbat,
+                            orn.nottxt,
+                            orn.last_upd_user_id notusr
+                       from ord o
+                      inner
+                       join dss_ord uo
+                         on o.ordnum = uo.ordnum
+                        and o.client_id = uo.client_id
+                        and o.wh_id = uo.wh_id
+                      inner
+                       join adrmst adr
+                         on o.st_adr_id = adr.adr_id
+                       left outer
+                       join shipment_line sl
+                         on o.ordnum = sl.ordnum
+                        and sl.ordlin = '0000000001'
+                        and sl.linsts <> 'B'
+                       left outer
+                       join shipment s
+                         on sl.ship_id = s.ship_id
+                        and s.shpsts <> 'B'
+                       left outer
+                       join ord_line ol
+                         on o.ordnum = ol.ordnum
+                        and ol.ordlin = '0000000001'
+                       left outer
+                       join ord_note orn
+                         on o.ordnum = orn.ordnum
+                        and o.wh_id = orn.wh_id
+                        and o.client_id = orn.client_id
+                        and orn.nottyp = 'S321_IT'
+                        and orn.notlin = '0001'
+                      where o.ordtyp in ('E05', 'E07', 'G05', 'G07', 'R05', 'R07', 'S05', 'S07', 'P05', 'P07', 'I05', 'I07')
+                        and o.adddte > sysdate - /*=moca_util.days(*/ 4 /*=)*/
+                      order by 10 desc,
+                            1,
+                            2,
+                            3,
+                            6) usr
+              order by 10 desc,
+                    1,
+                    2,
+                    3,
+                    6) usr
+      where min_diff <= 0
+      order by ordcnt desc,
+            first_name,
+            last_name,
+            zip,
+            adddte] catch(-1403) >> res
+    |
+    if (@? = 0)
+    {
+        write csv file
+         where resdata = @res
+           and filnam = 'S321_alert_' || to_char(sysdate, 'YYYYMMDD-HH24') || '.csv'
+           and path = @path
+    };
+}
+|
+expand environment variable
+ where name = '$' || @wh_id || 'outputs ' || '\S321 Alert\S321_alert_' || to_char(sysdate, 'YYYYMMDD-HH24') || '.csv'
+|
+publish data
+ where resfil = @value
+|
+find file
+ where pathname = @resfil catch(@?)
+|
+if (@pathname = @resfil and @type = 'F')
+{
+    publish data
+     where hostname = 'azeus2smtp.jdadelivers.com'
+       and mail_from = 'ITWMS-' || @wh_id || 'Alerts@jdadelivers.com'
+       and send_to_list = 'supplychaintechteam@aritzia.com;rlui@aritzia.com;outboundorders@aritzia.com;DCSupervisors@aritzia.com;jmac@aritzia.com;ssnow@aritzia.com;gsingh@aritzia.com;aabraham@aritzia.com;cchavez@aritzia.com;rlouie@aritzia.com;dkovacs@aritzia.com;CA_DCitemchecks@aritzia.com;apang@aritzia.com;wlin@aritzia.com'
+    |
+    send email
+     where subject = 'S321 GUARDRAIL ALERT'
+       and hostname = @hostname
+       and mail_from = @mail_from
+       and send_to = @send_to_list
+       and message = 'Multiple orders identified with the same consignee and ship date. Please see attached.'
+       and attachment = @resfil
+}","","",0,"0 5,35 6-23 ? * 1-7 *",0,0,""
+"USR_S321_GUARDRAIL_ALERT","","Aritzia S321 Guardrail Alert",0,"cron","list warehouses
+|
+{
+    expand environment variable
+     where name = '$' || @wh_id || 'outputs' || '\S321 Alert\'
+    |
+    publish data
+     where path = @value
+    |
+    [select first_name,
+            last_name,
+            zip,
+            ordnum,
+            ref_doc,
+            adddte,
+            shpdte,
+            lst_ord,
+            diff,
+            ordcnt,
+            carcod,
+            srvlvl,
+            schbat,
+            nottxt,
+            notusr
+       from (select TOP 100 PERCENT first_name,
+                    last_name,
+                    zip,
+                    ordnum,
+                    ref_doc,
+                    adddte,
+                    shpdte,
+                    lst_ord,
+                    diff,
+                    ordcnt,
+                    min(diff) over(partition by first_name || last_name || zip) min_diff,
+                    carcod,
+                    srvlvl,
+                    schbat,
+                    nottxt,
+                    notusr
+               from (select TOP 100 PERCENT adr.first_name,
+                            adr.last_name,
+                            substr(adr.adrpsz, 1, 5) zip,
+                            o.ordnum,
+                            uo.ref_doc,
+                            o.adddte,
+                            nvl(s.early_shpdte, convert(date, dateadd(hour, 12, o.adddte))) shpdte,
+                            convert(date, lag(nvl(s.early_shpdte, convert(date, dateadd(hour, 12, o.adddte))), 1) over(partition by adr.first_name || adr.last_name || substr(adr.adrpsz, 1, 5)
+                                                                                                                        order by o.adddte)) lst_ord,
+                            datediff(hour, lag(nvl(s.early_shpdte, convert(date, dateadd(hour, 12, o.adddte))), 1) over(partition by adr.first_name || adr.last_name || substr(adr.adrpsz, 1, 5)
+                                                                                                                         order by o.adddte), (nvl(s.early_shpdte, convert(date, dateadd(hour, 12, o.adddte))))) diff,
+                            count(*) over(partition by adr.first_name || adr.last_name || substr(adr.adrpsz, 1, 5)) ordcnt,
+                            ol.carcod,
+                            ol.srvlvl,
+                            sl.schbat,
+                            orn.nottxt,
+                            orn.last_upd_user_id notusr
+                       from ord o
+                      inner
+                       join dss_ord uo
+                         on o.ordnum = uo.ordnum
+                        and o.client_id = uo.client_id
+                        and o.wh_id = uo.wh_id
+                      inner
+                       join adrmst adr
+                         on o.st_adr_id = adr.adr_id
+                       left outer
+                       join shipment_line sl
+                         on o.ordnum = sl.ordnum
+                        and sl.ordlin = '0000000001'
+                        and sl.linsts <> 'B'
+                       left outer
+                       join shipment s
+                         on sl.ship_id = s.ship_id
+                        and s.shpsts <> 'B'
+                       left outer
+                       join ord_line ol
+                         on o.ordnum = ol.ordnum
+                        and ol.ordlin = '0000000001'
+                       left outer
+                       join ord_note orn
+                         on o.ordnum = orn.ordnum
+                        and o.wh_id = orn.wh_id
+                        and o.client_id = orn.client_id
+                        and orn.nottyp = 'S321_IT'
+                        and orn.notlin = '0001'
+                      where o.ordtyp in ('E05', 'E07', 'G05', 'G07', 'R05', 'R07', 'S05', 'S07', 'P05', 'P07', 'I05', 'I07')
+                        and o.adddte > sysdate - /*=moca_util.days(*/ 4 /*=)*/
+                      order by 10 desc,
+                            1,
+                            2,
+                            3,
+                            6) usr
+              order by 10 desc,
+                    1,
+                    2,
+                    3,
+                    6) usr
+      where min_diff <= 0
+      order by ordcnt desc,
+            first_name,
+            last_name,
+            zip,
+            adddte] catch(-1403) >> res
+    |
+    if (@? = 0)
+    {
+        write csv file
+         where resdata = @res
+           and filnam = 'S321_alert_' || to_char(sysdate, 'YYYYMMDD-HH24') || '.csv'
+           and path = @path
+    };
+}
+|
+expand environment variable
+ where name = '$' || @wh_id || 'outputs ' || '\S321 Alert\S321_alert_' || to_char(sysdate, 'YYYYMMDD-HH24') || '.csv'
+|
+publish data
+ where resfil = @value
+|
+find file
+ where pathname = @resfil catch(@?)
+|
+if (@pathname = @resfil and @type = 'F')
+{
+    publish data
+     where hostname = 'azeus2smtp.jdadelivers.com'
+       and mail_from = 'ITWMS-' || @wh_id || 'Alerts@jdadelivers.com'
+       and send_to_list = 'supplychaintechteam@aritzia.com;rlui@aritzia.com;outboundorders@aritzia.com;DCSupervisors@aritzia.com;jmac@aritzia.com;ssnow@aritzia.com;gsingh@aritzia.com;aabraham@aritzia.com;cchavez@aritzia.com;rlouie@aritzia.com;dkovacs@aritzia.com;CA_DCitemchecks@aritzia.com;apang@aritzia.com;wlin@aritzia.com'
+    |
+    send email
+     where subject = 'S321 GUARDRAIL ALERT'
+       and hostname = @hostname
+       and mail_from = @mail_from
+       and send_to = @send_to_list
+       and message = 'Multiple orders identified with the same consignee and ship date. Please see attached.'
+       and attachment = @resfil
+}","","",0,"0 5,35 6-23 ? * 1-7 *",0,0,""

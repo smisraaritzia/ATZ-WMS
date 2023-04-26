@@ -1,0 +1,77 @@
+job_id,role_id,name,enabled,type,command,log_file,trace_level,overlap,schedule,start_delay,timer,grp_nam
+"USR_INT_ALERT_ERROR_IFDS","","Aritzia Alert of Error IFDs in Outbound Integration",0,"cron","list warehouses
+|
+/*This query will get the count of stuck messages with the below statuses and a timestamp older than 10 minutes ago.*/
+[select count(evt_data_seq) record_count
+   from sl_evt_data
+  where evt_stat_cd in ('SE', 'IE', 'IC', 'EE')
+    and sys_id = 'DCS'
+    and evt_dt < dateadd(minute, -10, sysdate)] catch(-1403)
+|
+if (@record_count > 0)
+{
+    expand environment variable
+     where name = '$' || @wh_id || 'outputs '
+    |
+    [select case when charindex(' DEV ', @value) > 0 then ' BY DEV '
+                 when charindex(' TST ', @value) > 0 then ' BY QA '
+                 else ' BY PROD '
+            end envdsc
+       from dual]
+    |
+    get server information
+    |
+    publish data
+     where hostname = ' azeus2smtp.jdadelivers.com '
+       and mail_from = ' ITWMS - ' || @wh_id || ' Alerts @jdadelivers.com '
+              and send_to = ' ITWMS - ' || @wh_id || ' Alerts @aritzia.com;
+    jcwong @aritzia.com '
+       and sys_url = @url
+    |
+    send email
+     where subject = @envdsc || ' Integration Alert: ' || @record_count || ' Messages in Error(' || @sys_url || ') '
+       and hostname = @hostname
+       and mail_from = @mail_from
+       and send_to = @send_to
+       and message = ' There are ' || @record_count || ' message(s) found in the JDA Event Query. The Event Statuses to search for are SE, IE, IC,
+       and EE for the Triggering System DCS(this represents outbound messages) . Alert issued from instance: ' || @sys_url || ' This alert was generated from Job USR_INT_ALERT_ERROR_IFDS
+       and will trigger every 10 minutes until there are no further stuck messages.'
+}","","",0,"0 3/10 * * * ?",0,0,""
+"USR_INT_ALERT_ERROR_IFDS","","Aritzia Alert of Error IFDs in Outbound Integration",0,"cron","list warehouses
+|
+/*This query will get the count of stuck messages with the below statuses and a timestamp older than 10 minutes ago.*/
+[select count(evt_data_seq) record_count
+   from sl_evt_data
+  where evt_stat_cd in ('SE', 'IE', 'IC', 'EE')
+    and sys_id = 'DCS'
+    and evt_dt < dateadd(minute, -10, sysdate)] catch(-1403)
+|
+if (@record_count > 0)
+{
+    expand environment variable
+     where name = '$' || @wh_id || 'outputs '
+    |
+    [select case when charindex(' DEV ', @value) > 0 then ' BY DEV '
+                 when charindex(' TST ', @value) > 0 then ' BY QA '
+                 else ' BY PROD '
+            end envdsc
+       from dual]
+    |
+    get server information
+    |
+    publish data
+     where hostname = ' azeus2smtp.jdadelivers.com '
+       and mail_from = ' ITWMS - ' || @wh_id || ' Alerts @jdadelivers.com '
+              and send_to = ' ITWMS - ' || @wh_id || ' Alerts @aritzia.com;
+    jcwong @aritzia.com '
+       and sys_url = @url
+    |
+    send email
+     where subject = @envdsc || ' Integration Alert: ' || @record_count || ' Messages in Error(' || @sys_url || ') '
+       and hostname = @hostname
+       and mail_from = @mail_from
+       and send_to = @send_to
+       and message = ' There are ' || @record_count || ' message(s) found in the JDA Event Query. The Event Statuses to search for are SE, IE, IC,
+       and EE for the Triggering System DCS(this represents outbound messages) . Alert issued from instance: ' || @sys_url || ' This alert was generated from Job USR_INT_ALERT_ERROR_IFDS
+       and will trigger every 10 minutes until there are no further stuck messages.'
+}","","",0,"0 3/10 * * * ?",0,0,""

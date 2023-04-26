@@ -1,0 +1,269 @@
+job_id,role_id,name,enabled,type,command,log_file,trace_level,overlap,schedule,start_delay,timer,grp_nam
+"USR_ORD_RPT","","Aritzia Order Statistics Reports",0,"cron","{
+    [select to_char(convert(date, adddte)) || ' ' || format(adddte, 'hh:mm tt') || ' , ' || to_char(avgtime) || ' , ' || to_char(maxtime) || ' , ' || to_char(ordcnt) || CHAR(13) string
+       from (select dateadd(hour, datediff(hour, 0, adddte), 0) adddte,
+                    round(avg(convert(float, datediff(second, entdte, adddte)) / 60), 3) avgtime,
+                    round(max(convert(float, datediff(second, entdte, adddte)) / 60), 3) maxtime,
+                    count(*) ordcnt
+               from ord
+              where adddte > dateadd(day, datediff(day, 0, sysdate), 0)
+                and ordtyp not in ('ZSO', 'A01', 'APH', 'A02')
+              group by dateadd(hour, datediff(hour, 0, adddte), 0)) usr
+      order by adddte desc] catch(@?) >> res
+    |
+    if (@? = 0)
+    {
+        convert column results to string
+         where colnam = 'string'
+           and res = @res
+           and separator = '
+'
+        |
+        list warehouses
+        |
+        publish data
+         where data = @result_string
+           and hostname = 'azeus2smtp.jdadelivers.com'
+           and mail_from = 'ITWMS-' || @wh_id || 'Alerts@jdadelivers.com'
+           and send_to_list = 'supplychaintechteam@aritzia.com'
+        |
+        expand environment variable
+         where name = '$' || @wh_id || 'outputs'
+        |
+        [select case when charindex('DEV', @value) > 0 then 'BY DEV'
+                     when charindex('TST', @value) > 0 then 'BY QA'
+                     else ' BY PROD '
+                end envdsc
+           from dual]
+        |
+        send email
+         where subject = 'Integrator Order Processing Statistics - ' || @envdsc
+           and hostname = @hostname
+           and mail_from = @mail_from
+           and send_to = @send_to_list
+           and message = 'DATE, AVGTIME, MAXTIME, ORDCNT' || '' || @data
+    }
+};
+{
+    list warehouses
+    |
+    publish data
+     where days = 1
+    |
+    [select to_char(format(dtegrp, 'MM-dd-yyyy hhtt')) || ' , ' || to_char(cancnt) || ' , ' || to_char(usacnt) string
+       from (select hr.dtegrp,
+                    nvl(canord.cancnt, 0) cancnt,
+                    nvl(usaord.usacnt, 0) usacnt
+               from (select dateadd(hour, colorder - 1, dateadd(day, datediff(day, 0, sysdate), 0)) dtegrp
+                       from (select colorder
+                               from syscolumns c1
+                              inner
+                               join (select top 1 c2.id
+                                       from syscolumns c2
+                                      group by c2.id
+                                     having count(*) >= 24) c3
+                                 on c1.id = c3.id
+                              where colorder <= 24) hrs) hr
+               left outer
+               join (select dateadd(hour, datediff(hour, 0, o.adddte), 0) ordhr,
+                            count(*) cancnt
+                       from ord o
+                      inner
+                       join (select rtstr1 ordtyp,
+                                    rtstr2 ordstr
+                               from poldat_view pv
+                              where pv.polcod = 'DSS-ARITZIA'
+                                and pv.polvar = 'REPORTING'
+                                and pv.polval = 'ORDTYP-XREF'
+                                and pv.wh_id = @wh_id
+                                and pv.rtstr2 like '%CAN ECOMM%') ot
+                         on o.ordtyp = ot.ordtyp
+                      where o.adddte > dateadd(day, datediff(day, 0, sysdate), 0)
+                      group by dateadd(hour, datediff(hour, 0, o.adddte), 0)) canord
+                 on hr.dtegrp = canord.ordhr
+               left outer
+               join (select dateadd(hour, datediff(hour, 0, o.adddte), 0) ordhr,
+                            count(*) usacnt
+                       from ord o
+                      inner
+                       join (select rtstr1 ordtyp,
+                                    rtstr2 ordstr
+                               from poldat_view pv
+                              where pv.polcod = 'DSS-ARITZIA'
+                                and pv.polvar = 'REPORTING'
+                                and pv.polval = 'ORDTYP-XREF'
+                                and pv.wh_id = @wh_id
+                                and pv.rtstr2 like '%USA ECOMM%') ot
+                         on o.ordtyp = ot.ordtyp
+                      where o.adddte > dateadd(day, datediff(day, 0, sysdate), 0)
+                      group by dateadd(hour, datediff(hour, 0, o.adddte), 0)) usaord
+                 on hr.dtegrp = usaord.ordhr) data
+      order by dtegrp] >> res
+    |
+    if (@? = 0)
+    {
+        convert column results to string
+         where colnam = 'string'
+           and res = @res
+           and separator = '
+'
+        |
+        publish data
+         where data = @result_string
+           and hostname = 'azeus2smtp.jdadelivers.com'
+           and mail_from = 'ITWMS' || @wh_id || 'Alerts@jdadelivers.com'
+           and send_to_list = 'supplychaintechteam@aritzia.com'
+        |
+        expand environment variable
+         where name = '$' || @wh_id || 'outputs'
+        |
+        [select case when charindex('DEV', @value) > 0 then 'BY DEV'
+                     when charindex('TST', @value) > 0 then 'BY QA'
+                     else 'BY PROD'
+                end envdsc
+           from dual]
+        |
+        send email
+         where subject = 'Order Drop Statistics - ' || @envdsc
+           and hostname = @hostname
+           and mail_from = @mail_from
+           and send_to = @send_to_list
+           and message = 'DATE , CANECOM , USAECOM
+' || '
+' || @data
+    }
+};","","",0,"0 0 6-22 ? * * *",0,0,""
+"USR_ORD_RPT","","Aritzia Order Statistics Reports",0,"cron","{
+    [select to_char(convert(date, adddte)) || ' ' || format(adddte, 'hh:mm tt') || ' , ' || to_char(avgtime) || ' , ' || to_char(maxtime) || ' , ' || to_char(ordcnt) || CHAR(13) string
+       from (select dateadd(hour, datediff(hour, 0, adddte), 0) adddte,
+                    round(avg(convert(float, datediff(second, entdte, adddte)) / 60), 3) avgtime,
+                    round(max(convert(float, datediff(second, entdte, adddte)) / 60), 3) maxtime,
+                    count(*) ordcnt
+               from ord
+              where adddte > dateadd(day, datediff(day, 0, sysdate), 0)
+                and ordtyp not in ('ZSO', 'A01', 'APH', 'A02')
+              group by dateadd(hour, datediff(hour, 0, adddte), 0)) usr
+      order by adddte desc] catch(@?) >> res
+    |
+    if (@? = 0)
+    {
+        convert column results to string
+         where colnam = 'string'
+           and res = @res
+           and separator = '
+'
+        |
+        list warehouses
+        |
+        publish data
+         where data = @result_string
+           and hostname = 'azeus2smtp.jdadelivers.com'
+           and mail_from = 'ITWMS-' || @wh_id || 'Alerts@jdadelivers.com'
+           and send_to_list = 'supplychaintechteam@aritzia.com'
+        |
+        expand environment variable
+         where name = '$' || @wh_id || 'outputs'
+        |
+        [select case when charindex('DEV', @value) > 0 then 'BY DEV'
+                     when charindex('TST', @value) > 0 then 'BY QA'
+                     else ' BY PROD '
+                end envdsc
+           from dual]
+        |
+        send email
+         where subject = 'Integrator Order Processing Statistics - ' || @envdsc
+           and hostname = @hostname
+           and mail_from = @mail_from
+           and send_to = @send_to_list
+           and message = 'DATE, AVGTIME, MAXTIME, ORDCNT' || '' || @data
+    }
+};
+{
+    list warehouses
+    |
+    publish data
+     where days = 1
+    |
+    [select to_char(format(dtegrp, 'MM-dd-yyyy hhtt')) || ' , ' || to_char(cancnt) || ' , ' || to_char(usacnt) string
+       from (select hr.dtegrp,
+                    nvl(canord.cancnt, 0) cancnt,
+                    nvl(usaord.usacnt, 0) usacnt
+               from (select dateadd(hour, colorder - 1, dateadd(day, datediff(day, 0, sysdate), 0)) dtegrp
+                       from (select colorder
+                               from syscolumns c1
+                              inner
+                               join (select top 1 c2.id
+                                       from syscolumns c2
+                                      group by c2.id
+                                     having count(*) >= 24) c3
+                                 on c1.id = c3.id
+                              where colorder <= 24) hrs) hr
+               left outer
+               join (select dateadd(hour, datediff(hour, 0, o.adddte), 0) ordhr,
+                            count(*) cancnt
+                       from ord o
+                      inner
+                       join (select rtstr1 ordtyp,
+                                    rtstr2 ordstr
+                               from poldat_view pv
+                              where pv.polcod = 'DSS-ARITZIA'
+                                and pv.polvar = 'REPORTING'
+                                and pv.polval = 'ORDTYP-XREF'
+                                and pv.wh_id = @wh_id
+                                and pv.rtstr2 like '%CAN ECOMM%') ot
+                         on o.ordtyp = ot.ordtyp
+                      where o.adddte > dateadd(day, datediff(day, 0, sysdate), 0)
+                      group by dateadd(hour, datediff(hour, 0, o.adddte), 0)) canord
+                 on hr.dtegrp = canord.ordhr
+               left outer
+               join (select dateadd(hour, datediff(hour, 0, o.adddte), 0) ordhr,
+                            count(*) usacnt
+                       from ord o
+                      inner
+                       join (select rtstr1 ordtyp,
+                                    rtstr2 ordstr
+                               from poldat_view pv
+                              where pv.polcod = 'DSS-ARITZIA'
+                                and pv.polvar = 'REPORTING'
+                                and pv.polval = 'ORDTYP-XREF'
+                                and pv.wh_id = @wh_id
+                                and pv.rtstr2 like '%USA ECOMM%') ot
+                         on o.ordtyp = ot.ordtyp
+                      where o.adddte > dateadd(day, datediff(day, 0, sysdate), 0)
+                      group by dateadd(hour, datediff(hour, 0, o.adddte), 0)) usaord
+                 on hr.dtegrp = usaord.ordhr) data
+      order by dtegrp] >> res
+    |
+    if (@? = 0)
+    {
+        convert column results to string
+         where colnam = 'string'
+           and res = @res
+           and separator = '
+'
+        |
+        publish data
+         where data = @result_string
+           and hostname = 'azeus2smtp.jdadelivers.com'
+           and mail_from = 'ITWMS' || @wh_id || 'Alerts@jdadelivers.com'
+           and send_to_list = 'supplychaintechteam@aritzia.com'
+        |
+        expand environment variable
+         where name = '$' || @wh_id || 'outputs'
+        |
+        [select case when charindex('DEV', @value) > 0 then 'BY DEV'
+                     when charindex('TST', @value) > 0 then 'BY QA'
+                     else 'BY PROD'
+                end envdsc
+           from dual]
+        |
+        send email
+         where subject = 'Order Drop Statistics - ' || @envdsc
+           and hostname = @hostname
+           and mail_from = @mail_from
+           and send_to = @send_to_list
+           and message = 'DATE , CANECOM , USAECOM
+' || '
+' || @data
+    }
+};","","",0,"0 0 6-22 ? * * *",0,0,""

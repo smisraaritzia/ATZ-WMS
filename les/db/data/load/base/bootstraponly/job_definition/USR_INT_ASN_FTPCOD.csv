@@ -1,0 +1,103 @@
+job_id,role_id,name,enabled,type,command,log_file,trace_level,overlap,schedule,start_delay,timer,grp_nam
+"USR_INT_ASN_FTPCOD","","Aritzia Correct ASN Partial Ftpcods",0,"timer","list warehouses
+|
+[select rt.trknum,
+        id.prtnum,
+        count(distinct id.ftpcod) as ftpcod_count
+   from rcvtrk rt
+  inner
+   join rcvinv ri
+     on rt.trknum = ri.trknum
+  inner
+   join rcvlin rl
+     on ri.trknum = rl.trknum
+    and ri.supnum = rl.supnum
+    and ri.invnum = rl.invnum
+  inner
+   join invdtl id
+     on rl.rcvkey = id.rcvkey
+  where rt.rcvtrk_stat in ('EX', 'CI')
+    and rt.wh_id = @wh_id
+  group by rt.trknum,
+        id.prtnum
+ having count(distinct id.ftpcod) > 1] catch(-1403)
+|
+if (@? = 0)
+{
+    [select invdtl.prtnum,
+            invdtl.ftpcod,
+            count(invdtl.dtlnum)
+       from invlod
+       join invsub
+         on invlod.lodnum = invsub.lodnum
+       join invdtl
+         on invsub.subnum = invdtl.subnum
+      where invlod.stoloc = @trknum
+        and invdtl.prtnum = @prtnum
+        and rownum < 2
+      group by invdtl.prtnum,
+            invdtl.ftpcod
+      order by count(invdtl.dtlnum) desc]
+    |
+    [update invdtl
+        set invdtl.ftpcod = @ftpcod
+       from invdtl
+       join invsub
+         on invdtl.subnum = invsub.subnum
+       join invlod
+         on invlod.lodnum = invsub.lodnum
+      where invlod.stoloc = @trknum
+        and invdtl.prtnum = @prtnum
+        and invdtl.ftpcod != @ftpcod]
+}","","",0,"",0,900,""
+"USR_INT_ASN_FTPCOD","","Aritzia Correct ASN Partial Ftpcods",0,"timer","list warehouses
+|
+[select rt.trknum,
+        id.prtnum,
+        count(distinct id.ftpcod) as ftpcod_count
+   from rcvtrk rt
+  inner
+   join rcvinv ri
+     on rt.trknum = ri.trknum
+  inner
+   join rcvlin rl
+     on ri.trknum = rl.trknum
+    and ri.supnum = rl.supnum
+    and ri.invnum = rl.invnum
+  inner
+   join invdtl id
+     on rl.rcvkey = id.rcvkey
+  where rt.rcvtrk_stat in ('EX', 'CI')
+    and rt.wh_id = @wh_id
+  group by rt.trknum,
+        id.prtnum
+ having count(distinct id.ftpcod) > 1] catch(-1403)
+|
+if (@? = 0)
+{
+    [select invdtl.prtnum,
+            invdtl.ftpcod,
+            count(invdtl.dtlnum)
+       from invlod
+       join invsub
+         on invlod.lodnum = invsub.lodnum
+       join invdtl
+         on invsub.subnum = invdtl.subnum
+      where invlod.stoloc = @trknum
+        and invdtl.prtnum = @prtnum
+        and rownum < 2
+      group by invdtl.prtnum,
+            invdtl.ftpcod
+      order by count(invdtl.dtlnum) desc]
+    |
+    [update invdtl
+        set invdtl.ftpcod = @ftpcod
+       from invdtl
+       join invsub
+         on invdtl.subnum = invsub.subnum
+       join invlod
+         on invlod.lodnum = invsub.lodnum
+      where invlod.stoloc = @trknum
+        and invdtl.prtnum = @prtnum
+        and invdtl.ftpcod != @ftpcod]
+}","","",0,"",0,900,""
