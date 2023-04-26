@@ -1,4 +1,4 @@
-"job_id","Role ID","Name","Enabled","Type","Command","Source File","trace_level","overlap","Schedule","start_delay","timer","Absolute Group"
+job_id,Role ID,Name,Enabled,Type,Command,Source File,trace_level,overlap,Schedule,start_delay,timer,Absolute Group
 "AUTO_CLOSE_LTL_ALLO","","Automatically Load and Close LTL Allo","0","cron","list warehouses
 |
 process dss ltl shipment auto load and close
