@@ -1,31 +1,31 @@
-job_id,Role ID,Name,Enabled,Type,Command,Source File,trace_level,overlap,Schedule,start_delay,timer,Absolute Group
-AUTO_CLOSE_LTL_ALLO,,Automatically Load and Close LTL Allo,0,cron,list warehouses
+"job_id","Role ID","Name","Enabled","Type","Command","Source File","trace_level","overlap","Schedule","start_delay","timer","Absolute Group"
+"AUTO_CLOSE_LTL_ALLO","","Automatically Load and Close LTL Allo","0","cron","list warehouses
 |
 process dss ltl shipment auto load and close
  where ordtyp_list = 'A01,A02,APH'
-   and wh_id = @wh_id,$LESDIR/log/auto_close_ltl_allo.log,,0,0 0/10 0-1,20-23 * * ?,60,,
-AUTO_CLOSE_LTL_ECOM,,Automatically Load and Close LTL eCom,0,cron,list warehouses
+   and wh_id = @wh_id","$LESDIR/log/auto_close_ltl_allo.log","","0","0 0/10 0-1,20-23 * * ?","60","",""
+"AUTO_CLOSE_LTL_ECOM","","Automatically Load and Close LTL eCom","0","cron","list warehouses
 |
 process dss ltl shipment auto load and close
  where ordtyp_list = 'E01,E03,G01,G03,R01,R03,B03,S01,S03,P01,P03,I01,I03'
    and wh_id = @wh_id
-,$LESDIR/log/auto_close_ltl_ecom.log,,0,0 0/5 5-23 ? * * *,,,usr_data
-AUTO_CLOSE_LTL_RETAIL,,Automatically Load and Close LTL Retail,0,cron,list warehouses
+","$LESDIR/log/auto_close_ltl_ecom.log","","0","0 0/5 5-23 ? * * *","","","usr_data"
+"AUTO_CLOSE_LTL_RETAIL","","Automatically Load and Close LTL Retail","0","cron","list warehouses
 |
 process dss ltl shipment auto load and close
  where ordtyp_list = 'SR,MR,OT,SO,NFT,DCT,ECS,CUO,RTV,SC,ZRP'
-   and wh_id = @wh_id,$LESDIR/log/auto_close_ltl_retail.log,,0,0 0/10 0-1,10-14,19-23 * * ?,,,usr_data
-AUTO_CLOSE_LTL_US_ALLO,,Automatically Load and Close LTL US Allocation &amp; Phone Checks,0,cron,list warehouses
+   and wh_id = @wh_id","$LESDIR/log/auto_close_ltl_retail.log","","0","0 0/10 0-1,10-14,19-23 * * ?","","","usr_data"
+"AUTO_CLOSE_LTL_US_ALLO","","Automatically Load and Close LTL US Allocation &amp; Phone Checks","0","cron","list warehouses
 |
 process dss ltl shipment auto load and close
  where ordtyp_list = 'UNF'
-   and wh_id = @wh_id,$LESDIR/log/auto_close_ltl_us_allo.log,,0,0 0/10 5-6 * * ?,,,usr_data
-AUTO_CLOSE_LTL_US_RETAIL,,Automatically Load and Close LTL US Retail,0,cron,list warehouses
+   and wh_id = @wh_id","$LESDIR/log/auto_close_ltl_us_allo.log","","0","0 0/10 5-6 * * ?","","","usr_data"
+"AUTO_CLOSE_LTL_US_RETAIL","","Automatically Load and Close LTL US Retail","0","cron","list warehouses
 |
 process dss ltl shipment auto load and close
  where ordtyp_list = 'USR,UNF,UUO,UOT'
-   and wh_id = @wh_id,$LESDIR/log/auto_close_ltl_us_retail.log,,0,0 0/10 10-13,17-20 * * ?,,,usr_data
-USR_AGED_CARTON,,Aritzia Aged Packed Cartons Report (Obsolete),0,cron,list warehouses
+   and wh_id = @wh_id","$LESDIR/log/auto_close_ltl_us_retail.log","","0","0 0/10 10-13,17-20 * * ?","","","usr_data"
+"USR_AGED_CARTON","","Aritzia Aged Packed Cartons Report (Obsolete)","0","cron","list warehouses
 |
 expand environment variable
  where name = '$' || @wh_id || 'outputs ' || ' \Aged Packed Cartons\Aged_Packed_Cartons ' || '_' || to_char(sysdate, ' YYYYMMDDHH24MISS ') || ' .csv '
@@ -80,8 +80,8 @@ if (@pathname = @resfil and @type = ' F ')
        and message = ' The following Cartons are packed
        and are waiting to be moved to a Pallet '
        and attachment = @resfil
-},$LESDIR/log/usr_aged_carton,,0,0 15 5,12,23 ? * * *,60,,usr_data
-USR_AGED_RETAIL_ALERT,,Aritzia Aged Retail Order Alert,0,cron,list warehouses
+}","$LESDIR/log/usr_aged_carton","","0","0 15 5,12,23 ? * * *","60","","usr_data"
+"USR_AGED_RETAIL_ALERT","","Aritzia Aged Retail Order Alert","0","cron","list warehouses
 |
 [select ship_id || ' , ' || schbat || ' , ' || early_shpdte || ' , ' || carcod || ' , ' || srvlvl || ' , ' || orddsc string
    from (select s.ship_id,
@@ -192,8 +192,8 @@ if (@? = 0)
        and mail_from = @mail_from
        and send_to = @send_to_list
        and message = ' SHIP ID, WAVE, SHIP DATE, CARRIER, SERVICE LEVEL, ORDER TYPE ' || '' || @data
-},$LESDIR/log/usr_aged_retail.log,,0,5 0 19,20,21,22,23 ? * * *,60,,usr_data
-USR_DISTRO_INVMOV_ALERT,,Aritzia Distro Inventory Move Issue Alert,0,cron,{
+}","$LESDIR/log/usr_aged_retail.log","","0","5 0 19,20,21,22,23 ? * * *","60","","usr_data"
+"USR_DISTRO_INVMOV_ALERT","","Aritzia Distro Inventory Move Issue Alert","0","cron","{
     [select distinct iv.subnum,
             'No DTL Invmov' prob
        from inventory_pckwrk_view iv
@@ -301,8 +301,8 @@ if (@pathname = @resfil and @type = ' F ')
        and send_to = @send_to_list
        and message = ' Attached cartons have problematic invmov entry issues. Please see attached.'
        and attachment = @resfil
-},$LESDIR/log/usr_distro_invmov_alert.log,,0,0 0 6-23 ? * 2-6 *,,,usr_data
-USR_ER_ALERT,,Aritzia Duplicate ER Alert,0,cron,list warehouses
+}","$LESDIR/log/usr_distro_invmov_alert.log","","0","0 0 6-23 ? * 2-6 *","","","usr_data"
+"USR_ER_ALERT","","Aritzia Duplicate ER Alert","0","cron","list warehouses
 |
 [select prtnum || '-' || count(*) str,
         count(*) prtcnt
@@ -330,8 +330,8 @@ if (@? = 0)
        and mail_from = @mail_from
        and send_to = @send_to_list
        and message = ' Duplicate replenishments found for the following articles: ' || @prtnum_l catch(@?)
-},$LESDIR/log/usr_er_alert.log,,0,0 0/15 5-23 ? * 1-7 *,60,,usr_data
-USR_ER_ESCALATION,,Aritzia ER Escalation,0,cron,list warehouses
+}","$LESDIR/log/usr_er_alert.log","","0","0 0/15 5-23 ? * 1-7 *","60","","usr_data"
+"USR_ER_ESCALATION","","Aritzia ER Escalation","0","cron","list warehouses
 |
 [select DATEADD(d, -1, DATEDIFF(d, 0, sysdate)) + (0.0 / 24) dte1,
         0 srchpak
@@ -412,8 +412,8 @@ list policies
        and comflg = 1 catch(@?)
     |
     commit
-},$LESDIR/log/usr_er_esclation.log,,0,0 0,30 * 23,24,25,26,27,28,29,30 NOV ? 2022,60,,usr_data
-USR_FDX_ALERT2,,Aritzia Parcel Manifest Alert MON-FRI (2),0,cron,list warehouses
+}","$LESDIR/log/usr_er_esclation.log","","0","0 0,30 * 23,24,25,26,27,28,29,30 NOV ? 2022","60","","usr_data"
+"USR_FDX_ALERT2","","Aritzia Parcel Manifest Alert MON-FRI (2)","0","cron","list warehouses
 |
 [select distinct mancls
    from manfst m
@@ -455,8 +455,8 @@ if (@? = 0)
        and send_to = @send_to_list
        and message = ' Parcel Manifest Left Open Please close parcel manifest(s) ' || @mancls || ' before 11:30PM PST. This alert is active from 9:30PM PST to 10:00PM PST
        and will execute every 5 minutes during this window.' catch(@?)
-},$LESDIR/log/usr_fdx_alert.log,,0,0 0 22 ? * 2-6 *,60,,usr_data
-USR_FDX_ALERT3,,Aritzia Parcel Manifest Alert SAT,0,cron,list warehouses
+}","$LESDIR/log/usr_fdx_alert.log","","0","0 0 22 ? * 2-6 *","60","","usr_data"
+"USR_FDX_ALERT3","","Aritzia Parcel Manifest Alert SAT","0","cron","list warehouses
 |
 [select distinct mancls
    from manfst m
@@ -498,8 +498,8 @@ if (@? = 0)
        and send_to = @send_to_list
        and message = ' Parcel Manifest Left Open Please close parcel manifest(s) ' || @mancls || ' before 11:30PM PST. This alert is active from 7:30PM PST to 8:00PM PST
        and will execute every 15 minutes during this window.' catch(@?)
-},$LESDIR/log/usr_fdx_alert.log,,0,0 0,15,30 13 ? * 7 *,60,,usr_data
-USR_FDX_ALERT4,,Aritzia Parcel Manifest Alert SUN,0,cron,list warehouses
+}","$LESDIR/log/usr_fdx_alert.log","","0","0 0,15,30 13 ? * 7 *","60","","usr_data"
+"USR_FDX_ALERT4","","Aritzia Parcel Manifest Alert SUN","0","cron","list warehouses
 |
 [select distinct mancls
    from manfst m
@@ -539,8 +539,8 @@ if (@? = 0)
        and send_to = @send_to_list
        and message = ' Parcel Manifest Left Open Please close parcel manifest(s) ' || @mancls || ' before 11:30PM PST. This alert is active from 7:30PM PST to 8:00PM PST
        and will execute every 15 minutes during this window.' catch(@?)
-},$LESDIR/log/usr_fdx_alert.log,,0,0 30,45,59 19 ? * 1 *,60,,usr_data
-USR_FSMSTEST,,Aritzia FSMS Manifest Test (Temp),0,cron,list warehouses
+}","$LESDIR/log/usr_fdx_alert.log","","0","0 30,45,59 19 ? * 1 *","60","","usr_data"
+"USR_FSMSTEST","","Aritzia FSMS Manifest Test (Temp)","0","cron","list warehouses
 |
 [select @wh_id];
 {
@@ -588,8 +588,8 @@ USR_FSMSTEST,,Aritzia FSMS Manifest Test (Temp),0,cron,list warehouses
          where mfsmsn = @mfsmsn
            and wh_id = @wh_id
     }
-};,,,0,5 0/1 23,0-6 ? * * *,,,
-USR_GLITCH_ORD_ALERT,,Aritzia Glitched Order Alert,0,cron,list warehouses
+};","","","0","5 0/1 23,0-6 ? * * *","","",""
+"USR_GLITCH_ORD_ALERT","","Aritzia Glitched Order Alert","0","cron","list warehouses
 |
 {
     [select s.ship_id
@@ -704,8 +704,8 @@ if (@pathname = @resfil and @type = ' F ')
        and send_to = @send_to_list
        and message = ' Attached orders were staged but are glitched. Please see attached.'
        and attachment = @resfil
-},$LESDIR/log/usr_glitch_ord.log,,0,0 5 6-23/2 ? * 1-7 *,,,usr_data
-USR_INBSHP_PRTFTP,,Aritzia Inbound Receiving Report,0,cron,[select rt.trknum,
+}","$LESDIR/log/usr_glitch_ord.log","","0","0 5 6-23/2 ? * 1-7 *","","","usr_data"
+"USR_INBSHP_PRTFTP","","Aritzia Inbound Receiving Report","0","cron","[select rt.trknum,
         ri.invnum,
         ri.invtyp,
         ri.po_num,
@@ -809,8 +809,8 @@ list warehouses
      where resdata = @res
        and filnam = ' trknum_prtftp - ' || to_char(sysdate, 'YYYYMMDD - HH24MISS') || '.csv '
        and path = @path
-},$LESDIR/log/usr_inbshp_prtftp.log,,0,0 0 5 * * ?,,,usr_data
-USR_INT_ALERT_ERROR_IFDS,,Aritzia Alert of Error IFDs in Outbound Integration,0,cron,list warehouses
+}","$LESDIR/log/usr_inbshp_prtftp.log","","0","0 0 5 * * ?","","","usr_data"
+"USR_INT_ALERT_ERROR_IFDS","","Aritzia Alert of Error IFDs in Outbound Integration","0","cron","list warehouses
 |
 /*This query will get the count of stuck messages with the below statuses and a timestamp older than 10 minutes ago.*/
 [select count(evt_data_seq) record_count
@@ -847,8 +847,8 @@ if (@record_count > 0)
        and message = ' There are ' || @record_count || ' message(s) found in the JDA Event Query. The Event Statuses to search for are SE, IE, IC,
        and EE for the Triggering System DCS(this represents outbound messages) . Alert issued from instance: ' || @sys_url || ' This alert was generated from Job USR_INT_ALERT_ERROR_IFDS
        and will trigger every 10 minutes until there are no further stuck messages.'
-},,,0,0 3/10 * * * ?,,,les_data
-USR_INT_MISSING_IFDS,,Aritzia Integration Downloads Missing IFDs,0,timer,[select dwnld_seq
+}","","","0","0 3/10 * * * ?","","","les_data"
+"USR_INT_MISSING_IFDS","","Aritzia Integration Downloads Missing IFDs","0","timer","[select dwnld_seq
    from sl_dwnld
   where ins_dt > (sysdate - 0.5 / 24)
  except
@@ -904,8 +904,8 @@ View the download details using Download Viewer.  The file will need to be redro
 Alert issued from instance: ' || @sys_url || '
 
 This alert was generated from Job USR_INT_MISSING_IFDS and runs every 30 minutes.'
-},,,0,,60,1800,les_data
-USR_INV_LOC,,Aritzia Inventory by Location Report,0,cron,list warehouses
+}","","","0","","60","1800","les_data"
+"USR_INV_LOC","","Aritzia Inventory by Location Report","0","cron","list warehouses
 |
 [select ceil(convert(decimal, count(*)) / 150000) cnt
    from locmst loc
@@ -1012,8 +1012,8 @@ do loop
      where resdata = @res
        and filnam = 'inv_location_' || to_char(@i + 1) || '_' || to_char(sysdate, ' YYYYMMDD - HH24MISS ') || '.csv '
        and path = @path
-},$LESDIR/log/usr_inv_loc.log,,0,0 15 4,14 * * ?,,,usr_data
-USR_INV_MULTIPF,,Aritzia Multi Pick Face Report,0,cron,[select iv.prtnum,
+}","$LESDIR/log/usr_inv_loc.log","","0","0 15 4,14 * * ?","","","usr_data"
+"USR_INV_MULTIPF","","Aritzia Multi Pick Face Report","0","cron","[select iv.prtnum,
         iv.untqty,
         usr.loccnt,
         usr.totunt,
@@ -1094,8 +1094,8 @@ if (@? = 0)
      where resdata = @res
        and filnam = 'multipf_sku-' || to_char(sysdate, 'YYYYMMDD-HH24MISS') || '.csv '
        and path = @path
-},$LESDIR/log/usr_inv_multipf.log,,0,0 45 3 * * ?,,,usr_data
-USR_INV_MULTIRS,,Aritzia Multi Reserve Report,0,cron,list warehouses
+}","$LESDIR/log/usr_inv_multipf.log","","0","0 45 3 * * ?","","","usr_data"
+"USR_INV_MULTIRS","","Aritzia Multi Reserve Report","0","cron","list warehouses
 |
 [select iv.prtnum,
         iv.untqty,
@@ -1183,8 +1183,8 @@ if (@? = 0)
      where resdata = @res
        and filnam = 'ultirs_sku-' || to_char(sysdate, 'YYYYMMDD-HH24MISS') || '.csv '
        and path = @path
-},$LESDIR/log/usr_inv_multirs.log,,0,0 50 3 * * ?,,,usr_data
-USR_INV_PACKSTG,,Aritzia Packed Carton Age Report,0,cron,{
+}","$LESDIR/log/usr_inv_multirs.log","","0","0 50 3 * * ?","","","usr_data"
+"USR_INV_PACKSTG","","Aritzia Packed Carton Age Report","0","cron","{
     list warehouses
     |
     [select iv.stoloc,
@@ -1305,8 +1305,8 @@ USR_INV_PACKSTG,,Aritzia Packed Carton Age Report,0,cron,{
            and filnam = 'NOSUBUCC_' || to_char(sysdate, 'YYYYMMDD-HH24MISS') || '.csv '
            and path = @path
     }
-};,$LESDIR/log/usr_invpakstg.log,,0,0 0 7 ? * 2-6,,,usr_data
-USR_INV_PRTNUM,,Aritzia Inventory by Item Report,0,cron,list warehouses
+};","$LESDIR/log/usr_invpakstg.log","","0","0 0 7 ? * 2-6","","","usr_data"
+"USR_INV_PRTNUM","","Aritzia Inventory by Item Report","0","cron","list warehouses
 |
 [/*#nolimit*/
  select iv.prtnum,
@@ -1337,8 +1337,8 @@ publish data
 write csv file
  where resdata = @res
    and filnam = 'znv_prtnum-' || to_char(sysdate, 'YYYYMMDD-HH24MISS') || '.csv '
-   and path = @path,$LESDIR/log/usr_inv_prtnum.log,,0,0 30 4 * * ?,,,usr_data
-USR_INV_SUPPLIES,,Aritzia Non Merch Inventory,0,cron,list warehouses
+   and path = @path","$LESDIR/log/usr_inv_prtnum.log","","0","0 30 4 * * ?","","","usr_data"
+"USR_INV_SUPPLIES","","Aritzia Non Merch Inventory","0","cron","list warehouses
 |
 [select iv.prtnum,
         iv.invsts,
@@ -1387,8 +1387,8 @@ if (@? = 0)
      where resdata = @res
        and filnam = ' inv_supplies - ' || to_char(sysdate, ' YYYYMMDD - HH24MISS ') || ' .csv '
        and path = @path
-},$LESDIR/log/usr_inv_prtnum.log,,0,0 0 9 * * ?,,,usr_data
-USR_INV_VELOCITY,,Aritzia Velocity Report,0,cron,[select format(dateadd(month, datediff(month, 0, sysdate) -1, 0), 'MM-dd-yyyy') dte1,
+}","$LESDIR/log/usr_inv_prtnum.log","","0","0 0 9 * * ?","","","usr_data"
+"USR_INV_VELOCITY","","Aritzia Velocity Report","0","cron","[select format(dateadd(month, datediff(month, 0, sysdate) -1, 0), 'MM-dd-yyyy') dte1,
         format(dateadd(month, datediff(month, 0, sysdate), 0), 'MM-dd-yyyy') dte2
    from dual]
 |
@@ -1419,8 +1419,8 @@ publish data
 write csv file
  where resdata = @res
    and filnam = 'inv_velocity-' || to_char(sysdate, 'YYYYMMDD-HH24MISS') || '.csv '
-   and path = @path,$LESDIR/log/usr_inv_velocity.log,,0,0 0 1 1 * ?,,,usr_data
-USR_INV_VIEW_TEMP,,Aritzia Inventory View Snapshot for Boyne Move,0,cron,[select ceil(convert(decimal, count(*)) / 100000) cnt
+   and path = @path","$LESDIR/log/usr_inv_velocity.log","","0","0 0 1 1 * ?","","","usr_data"
+"USR_INV_VIEW_TEMP","","Aritzia Inventory View Snapshot for Boyne Move","0","cron","[select ceil(convert(decimal, count(*)) / 100000) cnt
    from inventory_view]
 |
 do loop
@@ -1451,8 +1451,8 @@ do loop
      where resdata = @res
        and filnam = 'inventory_view_part' || to_char(@i + 1) || '_' || to_char(sysdate, 'YYYYMMDDHH24MISS') || '.csv '
        and path = @path
-},$LESDIR/log/usr_inv_view.log,,0,0 0 4 * * ?,,,usr_data
-USR_MPS_ALERT,,Aritzia US MPS Alert,0,cron,list warehouses
+}","$LESDIR/log/usr_inv_view.log","","0","0 0 4 * * ?","","","usr_data"
+"USR_MPS_ALERT","","Aritzia US MPS Alert","0","cron","list warehouses
 |
 [select case when to_char(sysdate, 'd') between 2
          and 6 then 'WD'
@@ -1580,8 +1580,8 @@ if (@runchk)
            and message = 'The following US orders have multiple cartons packed being shipped today. Please see attached and triage.'
            and attachment = @resfil
     }
-},$LESDIR/log/usr_mps_guardrail.log,,0,5 0/5 8-23 ? * * *,,,usr_data
-USR_OPN_IS_ALERT,,Aritzia Open Inbound Shipment Alert,0,cron,list warehouses
+}","$LESDIR/log/usr_mps_guardrail.log","","0","5 0/5 8-23 ? * * *","","","usr_data"
+"USR_OPN_IS_ALERT","","Aritzia Open Inbound Shipment Alert","0","cron","list warehouses
 |
 [select trknum,
         expclose
@@ -1667,8 +1667,8 @@ else if (@? <> -1403)
            and send_to = @send_to_list
            and message = 'The following Inbound Shipments are still open: ' || @trknum catch(@?)
     }
-},$LESDIR/log/usr_opn_is_alert.log,,0,0 30 14 ? * * *,,,usr_data
-USR_ORD_RPT,,Aritzia Order Statistics Reports,0,cron,{
+}","$LESDIR/log/usr_opn_is_alert.log","","0","0 30 14 ? * * *","","","usr_data"
+"USR_ORD_RPT","","Aritzia Order Statistics Reports","0","cron","{
     [select to_char(convert(date, adddte)) || ' ' || format(adddte, 'hh:mm tt') || ' , ' || to_char(avgtime) || ' , ' || to_char(maxtime) || ' , ' || to_char(ordcnt) || CHAR(13) string
        from (select dateadd(hour, datediff(hour, 0, adddte), 0) adddte,
                     round(avg(convert(float, datediff(second, entdte, adddte)) / 60), 3) avgtime,
@@ -1801,8 +1801,8 @@ USR_ORD_RPT,,Aritzia Order Statistics Reports,0,cron,{
 ' || '
 ' || @data
     }
-};,$LESDIR/log/ord_ord_rpt.log,,0,0 0 6-22 ? * * *,,,usr_data
-USR_PCKMOV_ALERT,,Aritzia Pick Move Issue Alert,0,cron,{
+};","$LESDIR/log/ord_ord_rpt.log","","0","0 0 6-22 ? * * *","","","usr_data"
+"USR_PCKMOV_ALERT","","Aritzia Pick Move Issue Alert","0","cron","{
     list warehouses
     |
     [select distinct iv.ship_id,
@@ -1883,8 +1883,8 @@ if (@pathname = @resfil and @type = ' F ')
        and send_to = @send_to_list
        and message = ' Attached cartons have pckmov entry issues. Please see attached.'
        and attachment = @resfil
-},$LESDIR/log/usr_pckmov_alert.log,,0,0 0 6-23 ? * 2-6 *,,,usr_data
-USR_PIC_LOC_LOG,,Aritzia PIC Hourly Location Log,0,cron,list warehouses
+}","$LESDIR/log/usr_pckmov_alert.log","","0","0 0 6-23 ? * 2-6 *","","","usr_data"
+"USR_PIC_LOC_LOG","","Aritzia PIC Hourly Location Log","0","cron","list warehouses
 |
 [/*#nolimit*/
  select loc.arecod area,
@@ -1944,8 +1944,8 @@ publish data
 write csv file
  where resdata = @res
    and filnam = ' inv_location - ' || to_char(sysdate, ' YYYYMMDD - HH24MISS ') || ' .csv '
-   and path = @path,$LESDIR/log/usr_pic_loc.log,,0,0 10 6-23 4,5,6 2 ? 2022,,,usr_data
-USR_PRTFAMUPD_TLCHIVOL,,Aritzia Item Family Update TLC-HI_VOL,0,cron,list warehouses
+   and path = @path","$LESDIR/log/usr_pic_loc.log","","0","0 10 6-23 4,5,6 2 ? 2022","","","usr_data"
+"USR_PRTFAMUPD_TLCHIVOL","","Aritzia Item Family Update TLC-HI_VOL","0","cron","list warehouses
 |
 [select dss.prtnum,
         prtmst.prtfam old_prtfam
@@ -1997,8 +1997,8 @@ if (@? = 0)
            and mode = 'A'
            and path = '$LESDIR/log'
     }
-},$LESDIR/log/usr_prtfamupd_tlchivol.log,,0,5 5 5-23 ? * * *,,,usr_data
-USR_PRTFTP_LOG,,Aritzia Footprint Master,0,cron,list warehouses
+}","$LESDIR/log/usr_prtfamupd_tlchivol.log","","0","5 5 5-23 ? * * *","","","usr_data"
+"USR_PRTFTP_LOG","","Aritzia Footprint Master","0","cron","list warehouses
 |
 [select ceil(convert(decimal, count(*)) / 100000) cnt
    from prtftp
@@ -2058,8 +2058,8 @@ do loop
      where resdata = @res
        and filnam = ' prtftp_mst_' || to_char(@i + 1) || '_' || to_char(sysdate, 'YYYYMMDDHH24MISS') || '.csv '
        and path = @path
-},$LESDIR/log/usr_prtftp_log.log,,0,0 0 3 ? * 1,,,usr_data
-USR_RATINGTEST,,Aritzia Temp Parcel Rate Test,0,timer,list warehouses
+}","$LESDIR/log/usr_prtftp_log.log","","0","0 0 3 ? * 1","","","usr_data"
+"USR_RATINGTEST","","Aritzia Temp Parcel Rate Test","0","timer","list warehouses
 |
 [select top 1 iv.subnum
    from inventory_pckwrk_view iv
@@ -2100,8 +2100,8 @@ if (@? = 0)
        AND carsrv_param_list = null
        AND shpdte = '20210420000000'
        and invtid = @subnum catch(@?)
-},,,0,,60,20,
-USR_RCVFLG,,Aritzia Receivable &amp; Production Flag,0,cron,list warehouses
+}","","","0","","60","20",""
+"USR_RCVFLG","","Aritzia Receivable &amp; Production Flag","0","cron","list warehouses
 |
 [update prtmst
     set rcvflg = 1
@@ -2113,8 +2113,8 @@ USR_RCVFLG,,Aritzia Receivable &amp; Production Flag,0,cron,list warehouses
 [update prtmst
     set prdflg = 0
   where prdflg = 1
-    and typcod = 'ZSUP'] catch(@?);,$LESDIR/log/usr_rcvflg.log,,0,0 5,35 * * * ?,,,usr_data
-USR_RPT_AGED_ORDERS,,Aritzia Report - Aged Orders (Hourly),0,cron,[/*#nolimit*/
+    and typcod = 'ZSUP'] catch(@?);","$LESDIR/log/usr_rcvflg.log","","0","0 5,35 * * * ?","","","usr_data"
+"USR_RPT_AGED_ORDERS","","Aritzia Report - Aged Orders (Hourly)","0","cron","[/*#nolimit*/
  SELECT (CONVERT(VARCHAR(10), o.adddte, 103)) order_drop_date,
         CONVERT(VARCHAR(8), o.adddte, 108) order_drop_time,
         o.ordnum order_number,
@@ -2247,8 +2247,8 @@ if (@? = 0)
      where resdata = @res
        and filnam = 'aged_orders-' || to_char(sysdate, 'YYYYMMDD-hh24mi') || '.csv'
        and path = @path
-},$LESDIR/log/usr_rpt_agedorders.log,,0,0 0 0,5,6,7,8,9,10,11,12,13,14,15,16,17,18,19,20,21,22,23 ? * * *,,,usr_data
-USR_RPT_AGED_ORDERS 2,,Aritzia Report - Aged Orders (Half Hour),0,cron,[SELECT (CONVERT(VARCHAR(10), o.adddte, 103)) order_drop_date,
+}","$LESDIR/log/usr_rpt_agedorders.log","","0","0 0 0,5,6,7,8,9,10,11,12,13,14,15,16,17,18,19,20,21,22,23 ? * * *","","","usr_data"
+"USR_RPT_AGED_ORDERS 2","","Aritzia Report - Aged Orders (Half Hour)","0","cron","[SELECT (CONVERT(VARCHAR(10), o.adddte, 103)) order_drop_date,
         CONVERT(VARCHAR(8), o.adddte, 108) order_drop_time,
         o.ordnum order_number,
         sh.carcod carrier,
@@ -2380,8 +2380,8 @@ if (@? = 0)
      where resdata = @res
        and filnam = 'aged_orders-' || to_char(sysdate, 'YYYYMMDD-hh24mi') || '.csv'
        and path = @path
-},$LESDIR/log/usr_rpt_agedorders2.log,,0,0 30 11-18 ? * * *,,,usr_data
-USR_RPT_CMDPROFILE,,Aritzia Report - Command Profile,0,cron,{
+}","$LESDIR/log/usr_rpt_agedorders2.log","","0","0 30 11-18 ? * * *","","","usr_data"
+"USR_RPT_CMDPROFILE","","Aritzia Report - Command Profile","0","cron","{
     list warehouses
     |
     list command usage >> res
@@ -2479,8 +2479,8 @@ USR_RPT_CMDPROFILE,,Aritzia Report - Command Profile,0,cron,{
            and send_to = @send_to_list
            and message = ' Job USR_RPT_CMDPROFILE Failed to Find a Command Profile Extract.'
     }
-};,$LESDIR/log/usr_rpt_cmdprofile.log,,0,0 0 5 1 * ? *,,,usr_data
-USR_RPT_CNT_AT_ZERO,,Aritzia Report - Count At Zero SKU Burn,0,cron,
+};","$LESDIR/log/usr_rpt_cmdprofile.log","","0","0 0 5 1 * ? *","","","usr_data"
+"USR_RPT_CNT_AT_ZERO","","Aritzia Report - Count At Zero SKU Burn","0","cron","
 /*Count at Zero SKU Burn*/
 [SELECT to_char(ch.cntdte, 'YYYY-MM-DD') cnt_date,
         CASE WHEN maxqvl >= 92000 THEN 'BULK'
@@ -2516,8 +2516,8 @@ publish data
 write csv file
  where resdata = @res
    and filnam = 'count_at_zero_sku_burn-' || to_char(sysdate, 'YYYYMMDD-HH24MISS') || '.csv '
-   and path = @path;,$LESDIR/log/usr_rpt_CNT_AT_ZERO.log,,0,0 10 0 ? * *,,,usr_data
-USR_RPT_HST_ER,,Aritzia Report - Historical ERs,0,cron,[select format(dateadd(day, -1, getdate()), 'MM-dd-yyyy') dte1,
+   and path = @path;","$LESDIR/log/usr_rpt_CNT_AT_ZERO.log","","0","0 10 0 ? * *","","","usr_data"
+"USR_RPT_HST_ER","","Aritzia Report - Historical ERs","0","cron","[select format(dateadd(day, -1, getdate()), 'MM-dd-yyyy') dte1,
         format(dateadd(day, 0, getdate()), 'MM-dd-yyyy') dte2
    from dual]
 |
@@ -2616,8 +2616,8 @@ publish data
 write csv file
  where resdata = @res
    and filnam = 'historical_ERs-' || to_char(sysdate, 'YYYYMMDD-HH24MISS') || '.csv '
-   and path = @path;,$LESDIR/log/usr_rpt_hst_er.log,,0,0 0 1 ? * * *,,,usr_data
-USR_RPT_HST_PCKS,,Aritzia Report - Historical Picks,0,cron,[select format(dateadd(day, -1, getdate()), 'MM-dd-yyyy') dte1
+   and path = @path;","$LESDIR/log/usr_rpt_hst_er.log","","0","0 0 1 ? * * *","","","usr_data"
+"USR_RPT_HST_PCKS","","Aritzia Report - Historical Picks","0","cron","[select format(dateadd(day, -1, getdate()), 'MM-dd-yyyy') dte1
    from dual]
 |
 [select /*#nolimit*/
@@ -2676,8 +2676,8 @@ publish data
 write csv file
  where resdata = @res
    and filnam = 'hstpck_' || to_char(@i + 1) || '_' || to_char(sysdate, 'YYYYMMDDHH24MISS') || '.csv'
-   and path = @path,$LESDIR/log/usr_rpt_hst_pcks,,0,0 0 0 ? * *,,,usr_data
-USR_RPT_HST_TOPOFF,,Aritzia Report - Historical Topoffs,0,cron,[select format(dateadd(day, -1, getdate()), 'MM-dd-yyyy') dte1,
+   and path = @path","$LESDIR/log/usr_rpt_hst_pcks","","0","0 0 0 ? * *","","","usr_data"
+"USR_RPT_HST_TOPOFF","","Aritzia Report - Historical Topoffs","0","cron","[select format(dateadd(day, -1, getdate()), 'MM-dd-yyyy') dte1,
         format(dateadd(day, 0, getdate()), 'MM-dd-yyyy') dte2
    from dual]
 |
@@ -2777,8 +2777,8 @@ publish data
 write csv file
  where resdata = @res
    and filnam = 'historical_topoffs-' || to_char(sysdate, 'YYYYMMDD-HH24MISS') || '.csv '
-   and path = @path;,$LESDIR/log/usr_rpt_hst_topoff.log,,0,0 0 1 ? * * *,,,usr_data
-USR_RPT_INBPLAN,,Aritzia Report - Inbound Plan,0,cron,list warehouses
+   and path = @path;","$LESDIR/log/usr_rpt_hst_topoff.log","","0","0 0 1 ? * * *","","","usr_data"
+"USR_RPT_INBPLAN","","Aritzia Report - Inbound Plan","0","cron","list warehouses
 |
 [select decode(rec_date, 0, '', format(rec_date, 'MM-dd-yyyy')) rec_date,
         rec_time,
@@ -2914,8 +2914,8 @@ if (@? = 0)
      where resdata = @res
        and filnam = 'inbound-plan-' || to_char(sysdate, 'YYYYMMDD-hh24mi') || '.csv'
        and path = @path
-},$LESDIR/log/usr_rpt_inbplan.log,,0,0 0 12,14,16 ? * * *,60,,usr_data
-USR_RPT_INV_ADJ_DETAILS,,Aritzia Report - Inventory Adjustment Details,0,cron,/* Detailed Inventory Adjustments */
+}","$LESDIR/log/usr_rpt_inbplan.log","","0","0 0 12,14,16 ? * * *","60","","usr_data"
+"USR_RPT_INV_ADJ_DETAILS","","Aritzia Report - Inventory Adjustment Details","0","cron","/* Detailed Inventory Adjustments */
 list warehouses
 |
 [SELECT cnt_a.count_date,
@@ -2983,8 +2983,8 @@ publish data
 write csv file
  where resdata = @res
    and filnam = 'inventory_adj_details-' || to_char(sysdate, 'YYYYMMDD-HH24MISS') || '.csv '
-   and path = @path;,$LESDIR/log/usr_rpt_inv_adj_details.log,,0,0 5 0 ? * * *,,,usr_data
-USR_RPT_INV_CNT_SUMMARY,,Aritzia Report - Inventory Count Summary,0,cron,/* Summary of Inventory Adjustments*/
+   and path = @path;","$LESDIR/log/usr_rpt_inv_adj_details.log","","0","0 5 0 ? * * *","","","usr_data"
+"USR_RPT_INV_CNT_SUMMARY","","Aritzia Report - Inventory Count Summary","0","cron","/* Summary of Inventory Adjustments*/
 list warehouses
 |
 [SELECT count_date,
@@ -3135,8 +3135,8 @@ publish data
 write csv file
  where resdata = @res
    and filnam = 'inventory_cnt_summary-' || to_char(sysdate, 'YYYYMMDD-HH24MISS') || '.csv'
-   and path = @path;,$LESDIR/log/usr_rpt_cnt_summary.log,,0,0 5 0 ? * * *,60,,usr_data
-USR_RPT_PCK_LOC_UTILIZATION,,Aritzia Report - Pick Location Utilization,0,cron,/*Location Summary*/
+   and path = @path;","$LESDIR/log/usr_rpt_cnt_summary.log","","0","0 5 0 ? * * *","60","","usr_data"
+"USR_RPT_PCK_LOC_UTILIZATION","","Aritzia Report - Pick Location Utilization","0","cron","/*Location Summary*/
 [SELECT bin_type,
         COUNT(bin_type) locations,
         isnull(SUM(CASE WHEN locsts IN ('F', 'P') THEN 1
@@ -3185,8 +3185,8 @@ if (@? = 0)
      where resdata = @res
        and filnam = 'pck_loc_utilization-' || to_char(sysdate, 'YYYYMMDD-hh24mi') || '.csv '
        and path = @path
-},$LESDIR/log/usr_rpt_pck_loc_utilization.log,,0,0 0 0 ? * *,,,usr_data
-USR_RPT_PCK_REWAREHOUSING,,Aritzia Report - Pick Rewarehousing,0,cron,list warehouses
+}","$LESDIR/log/usr_rpt_pck_loc_utilization.log","","0","0 0 0 ? * *","","","usr_data"
+"USR_RPT_PCK_REWAREHOUSING","","Aritzia Report - Pick Rewarehousing","0","cron","list warehouses
 |
 [SELECT variant,
         merch_catg,
@@ -3393,8 +3393,8 @@ publish data
 write csv file
  where resdata = @res
    and filnam = 'pck_rewarehousing-' || to_char(sysdate, 'YYYYMMDD-HH24MISS') || '.csv'
-   and path = @path,$LESDIR/log/usr_rpt_pckrewarhousing.log,,0,0 50 7,13,17 ? * * *,60,,usr_data
-USR_RPT_PCK_TO_RESV_SKUS,,Aritzia Report - Pick to Reserve SKUs,0,cron,[/*#nolimit*/
+   and path = @path","$LESDIR/log/usr_rpt_pckrewarhousing.log","","0","0 50 7,13,17 ? * * *","60","","usr_data"
+"USR_RPT_PCK_TO_RESV_SKUS","","Aritzia Report - Pick to Reserve SKUs","0","cron","[/*#nolimit*/
  SELECT iv.prtnum,
         iv.tot_qty,
         ISNULL(vel.unit_vel, 0) vel,
@@ -3472,8 +3472,8 @@ publish data
 write csv file
  where resdata = @res
    and filnam = 'pck_to_resv-' || to_char(sysdate, 'YYYYMMDD-HH24MISS') || '.csv '
-   and path = @path;,$LESDIR/log/usr_rpt_pck_to_resv_skus.log,,0,0 0 0 ? * *,,,usr_data
-USR_RPT_RCV_INB_SKU,,Aritzia Report - Receiving Inbound SKU Summary,0,cron,[SELECT rec_date,
+   and path = @path;","$LESDIR/log/usr_rpt_pck_to_resv_skus.log","","0","0 0 0 ? * *","","","usr_data"
+"USR_RPT_RCV_INB_SKU","","Aritzia Report - Receiving Inbound SKU Summary","0","cron","[SELECT rec_date,
         tot_sku,
         ex_sku,
         new_sku,
@@ -3566,8 +3566,8 @@ publish data
 write csv file
  where resdata = @res
    and filnam = 'receiving_inbound_sku_summary-' || to_char(sysdate, 'YYYYMMDD-HH24MISS') || '.csv'
-   and path = @path;,$LESDIR/log/usr_rpt_rcv_inb_sku.log,,0,0 0 17 ? * * *,,,usr_data
-USR_RPT_RESV_LOC_UTILIZATION,,Aritzia Report - Reserve Location Utilization,0,cron,[SELECT bin_type,
+   and path = @path;","$LESDIR/log/usr_rpt_rcv_inb_sku.log","","0","0 0 17 ? * * *","","","usr_data"
+"USR_RPT_RESV_LOC_UTILIZATION","","Aritzia Report - Reserve Location Utilization","0","cron","[SELECT bin_type,
         COUNT(bin_type) locations,
         isnull(SUM(CASE WHEN locsts IN ('F', 'P') THEN 1
                    END), 0) AS used,
@@ -3611,8 +3611,8 @@ publish data
 write csv file
  where resdata = @res
    and filnam = 'resv_loc_utilization-' || to_char(sysdate, 'YYYYMMDD-HH24MISS') || '.csv '
-   and path = @path;,$LESDIR/log/usr_resv_loc_utilization.log,,0,0 0 0 ? * * *,,,usr_data
-USR_RPT_RESV_REWAREHOUSING,,Aritzia Report - Reserve Rewarehousing,0,cron,list warehouses
+   and path = @path;","$LESDIR/log/usr_resv_loc_utilization.log","","0","0 0 0 ? * * *","","","usr_data"
+"USR_RPT_RESV_REWAREHOUSING","","Aritzia Report - Reserve Rewarehousing","0","cron","list warehouses
 |
 [SELECT stoloc,
         aisle_id,
@@ -3732,8 +3732,8 @@ if (@? = 0)
      where resdata = @res
        and filnam = 'resv_rewarehouse-' || to_char(sysdate, 'YYYYMMDD-hh24mi') || '.csv'
        and path = @path
-},$LESDIR/log/usr_rpt_rewarehouse.log,,0,0 0 4,14 ? * * *,60,,usr_data
-USR_RPT_REWAREHOUSE,,Aritzia Report - Rewarehouse,0,cron,list warehouses
+}","$LESDIR/log/usr_rpt_rewarehouse.log","","0","0 0 4,14 ? * * *","60","","usr_data"
+"USR_RPT_REWAREHOUSE","","Aritzia Report - Rewarehouse","0","cron","list warehouses
 |
 [SELECT stoloc,
         aisle_id,
@@ -3853,8 +3853,8 @@ USR_RPT_REWAREHOUSE,,Aritzia Report - Rewarehouse,0,cron,list warehouses
                                 where resdata = @res
                                   and filnam = 'rewarehouse-' || to_char(sysdate, 'YYYYMMDD-hh24mi') || '.csv'
                                   and path = @path
-                           },$LESDIR/log/usr_rpt_rewarehouse.log,,0,0 0 4,14 ? * * *,60,,usr_data
-USR_RPT_RVL_MP_DETAILS,,Aritzia Report - RVL Merch Pull Details by Item,0,cron,list warehouses
+                           }","$LESDIR/log/usr_rpt_rewarehouse.log","","0","0 0 4,14 ? * * *","60","","usr_data"
+"USR_RPT_RVL_MP_DETAILS","","Aritzia Report - RVL Merch Pull Details by Item","0","cron","list warehouses
 |
 [SELECT c.prtnum,
         c.pull_date,
@@ -3985,8 +3985,8 @@ if (@? = 0)
      where resdata = @res
        and filnam = 'rvl_mp_details-' || to_char(sysdate, 'YYYYMMDD-hh24mi') || '.csv'
        and path = @path
-},$LESDIR/log/usr_rpt_rvl_mp_details.log,,0,0 0 23 ? * * *,60,,usr_data
-USR_RPT_RVL_MP_SUMMARY,,Aritzia Report - RVL Merch Pull Summary,0,cron,/*RVL MP Order Drop by Day*/
+}","$LESDIR/log/usr_rpt_rvl_mp_details.log","","0","0 0 23 ? * * *","60","","usr_data"
+"USR_RPT_RVL_MP_SUMMARY","","Aritzia Report - RVL Merch Pull Summary","0","cron","/*RVL MP Order Drop by Day*/
 [SELECT to_char(rh.adddte, 'MM-DD-YYYY') create_date,
         ISNULL(sum(CASE WHEN rh.invtyp = 'MP' THEN rl.expqty
                    END), 0) AS mp_units,
@@ -4047,8 +4047,8 @@ if (@? = 0)
      where resdata = @res
        and filnam = 'rvl_mp_summary-' || to_char(sysdate, 'YYYYMMDD-hh24mi') || '.csv '
        and path = @path
-},$LESDIR/log/usr_rpt_rvl_mp_summary.log,,0,0 0 23 ? * * *,,,usr_data
-USR_RPT_SKU_BURN,,Aritzia Report - SKU Burn,0,cron,/*Count at Zero SKU Burn*/
+}","$LESDIR/log/usr_rpt_rvl_mp_summary.log","","0","0 0 23 ? * * *","","","usr_data"
+"USR_RPT_SKU_BURN","","Aritzia Report - SKU Burn","0","cron","/*Count at Zero SKU Burn*/
 [SELECT to_char(ch.cntdte, 'YYYY-MM-DD') cnt_date,
         CASE WHEN maxqvl >= 92000 THEN 'BULK'
              WHEN maxqvl >= 14000 THEN 'XL'
@@ -4092,8 +4092,8 @@ if (@? = 0)
      where resdata = @res
        and filnam = 'sku_burn-' || to_char(sysdate, 'YYYYMMDD-hh24mi') || '.csv '
        and path = @path
-},$LESDIR/log/usr_rpt_sku_burn.log,,0,0 0 0 ? * *,,,usr_data
-USR_S321_DECOUP_NOTE,,Aritzia Decoupled Note Bandaid (Obsolete),0,cron,/* Note Text Bandaid */
+}","$LESDIR/log/usr_rpt_sku_burn.log","","0","0 0 0 ? * *","","","usr_data"
+"USR_S321_DECOUP_NOTE","","Aritzia Decoupled Note Bandaid (Obsolete)","0","cron","/* Note Text Bandaid */
 list warehouses
 |
 [select distinct olnt.ordnum
@@ -4149,8 +4149,8 @@ if (@? = 0)
     [insert
        into ord_note(client_id, ordnum, nottyp, notlin, wh_id, nottxt, edtflg, u_version, ins_dt, last_upd_dt, ins_user_id, last_upd_user_id)
      values ('----', @ordnum, 'PAK_DECOUPLE', @ordlin, @wh_id, @nottxt, '1', '1', sysdate, sysdate, 'USR_SYSJOB', 'USR_SYSJOB')] catch(@?)
-},$LESDIR/log/usr_s321_decoup_note.log,,0,0 0/15 4-23 ? * * *,,,usr_data
-USR_S321_GUARDRAIL_ALERT,,Aritzia S321 Guardrail Alert,0,cron,list warehouses
+}","$LESDIR/log/usr_s321_decoup_note.log","","0","0 0/15 4-23 ? * * *","","","usr_data"
+"USR_S321_GUARDRAIL_ALERT","","Aritzia S321 Guardrail Alert","0","cron","list warehouses
 |
 {
     expand environment variable
@@ -4287,8 +4287,8 @@ if (@pathname = @resfil and @type = 'F')
        and send_to = @send_to_list
        and message = 'Multiple orders identified with the same consignee and ship date. Please see attached.'
        and attachment = @resfil
-},$LESDIR/log/usr_s321_guardrail.log,,0,0 5,35 6-23 ? * 1-7 *,,,usr_data
-USR_S321_TIMEREL_ALERT,,Aritzia S321 Time Release Alert,0,cron,[select distinct schbat
+}","$LESDIR/log/usr_s321_guardrail.log","","0","0 5,35 6-23 ? * 1-7 *","","","usr_data"
+"USR_S321_TIMEREL_ALERT","","Aritzia S321 Time Release Alert","0","cron","[select distinct schbat
    from shipment s
   inner
    join shipment_line sl
@@ -4326,8 +4326,8 @@ if (@? = 0)
        and mail_from = @mail_from
        and send_to = @send_to_list
        and message = ' US eCommerce Wave(s) Ship Date Not Set Please set the ship date for the following wave(s) : ' || '' || @schbat catch(@?)
-},$LESDIR/log/usr_s321_timerel.log,,0,0 0/15 6-23 ? * * *,,,usr_data
-USR_TIMERELUPD_FDXCADOM,,Aritzia Time Release Update Fedex CA Domestic,0,cron,list warehouses
+}","$LESDIR/log/usr_s321_timerel.log","","0","0 0/15 6-23 ? * * *","","","usr_data"
+"USR_TIMERELUPD_FDXCADOM","","Aritzia Time Release Update Fedex CA Domestic","0","cron","list warehouses
 |
 [select format(convert(date, sysdate -14), 'yyyyMMddHHmmss') startdte,
         format(DATEADD(ms, -3, DATEADD(day, DATEDIFF(day, 0, sysdate) + 1, 0)), 'yyyyMMddHHmmss') enddte
@@ -4382,8 +4382,8 @@ if (@mancnt2 is null)
        and path = '$LESDIR/log'
     |
     commit;
-},$LESDIR/log/usr_timerelupd_fdxcadom.log,,0,5 30 17 26-29 12 ? 2021,,,usr_data
-USR_TIMERELUPD_FDXEXPRESS,,Aritzia Time Release Update Fedex Express,0,cron,list warehouses
+}","$LESDIR/log/usr_timerelupd_fdxcadom.log","","0","5 30 17 26-29 12 ? 2021","","","usr_data"
+"USR_TIMERELUPD_FDXEXPRESS","","Aritzia Time Release Update Fedex Express","0","cron","list warehouses
 |
 [select format(convert(date, sysdate -14), 'yyyyMMddHHmmss') startdte,
         format(DATEADD(ms, -3, DATEADD(day, DATEDIFF(day, 0, sysdate) + 1, 0)), 'yyyyMMddHHmmss') enddte
@@ -4438,8 +4438,8 @@ if (@mancnt2 is null)
        and path = ' $LESDIR / log '
     |
     commit;
-},$LESDIR/log/usr_timerelupd_fdxexpress.log,,0,5 30 15 26-29 12 ? 2021,,,usr_data
-USR_TRLR_STAGE_CA,,Aritzia Trailer Stage - Canada,0,cron,list warehouses
+}","$LESDIR/log/usr_timerelupd_fdxexpress.log","","0","5 30 15 26-29 12 ? 2021","","","usr_data"
+"USR_TRLR_STAGE_CA","","Aritzia Trailer Stage - Canada","0","cron","list warehouses
 |
 expand environment variable
  where name = '$' || @wh_id || 'outputs ' || ' \Glitched Order'
@@ -4524,8 +4524,8 @@ if (@pathname = @resfil and @type = ' F ')
        and send_to = @send_to_list
        and message = 'The following LPNs failed to be staged.'
        and attachment = @resfil
-},$LESDIR/log/usr_trlr_stage_ca.log,,0,0 45 11,14,16,18,19,20,21,22 ? * * *,,,usr_data
-USR_TRLR_STAGE_US,,Aritzia Trailer Stage - US,0,cron,list warehouses
+}","$LESDIR/log/usr_trlr_stage_ca.log","","0","0 45 11,14,16,18,19,20,21,22 ? * * *","","","usr_data"
+"USR_TRLR_STAGE_US","","Aritzia Trailer Stage - US","0","cron","list warehouses
 |
 expand environment variable
  where name = '$' || @wh_id || 'outputs ' || ' \Glitched Order'
@@ -4610,13 +4610,13 @@ if (@pathname = @resfil and @type = ' F ')
        and send_to = @send_to_list
        and message = 'The following LPNs failed to be staged.'
        and attachment = @resfil
-},$LESDIR/log/usr_trlr_stage_ca.log,,0,0 45 16,18,19,20,21,22 ? * * *,,,usr_data
-USR-ATZ-SUB-MOVE,,Aritzia Case Transfer Job,0,timer,list warehouses
+}","$LESDIR/log/usr_trlr_stage_ca.log","","0","0 45 16,18,19,20,21,22 ? * * *","","","usr_data"
+"USR-ATZ-SUB-MOVE","","Aritzia Case Transfer Job","0","timer","list warehouses
 |
 create usr directed work by subload
  where wh_id = @wh_id
-,$LESDIR/log/usr_atz_sub_move.log,,0,,0,30,dcs_data
-USR_AUD_RATE,,Aritzia Audit Sampling Rate Update,0,cron,[select rtstr1,
+","$LESDIR/log/usr_atz_sub_move.log","","0","","0","30","dcs_data"
+"USR_AUD_RATE","","Aritzia Audit Sampling Rate Update","0","cron","[select rtstr1,
         rtflt1,
         wh_id
    from poldat_view
@@ -4655,8 +4655,8 @@ if (@? = 0)
            and mode = 'A'
            and path = '$LESDIR/log'
     }
-};,$LESDIR/log/usr_aud_rate.log,,0,0 0 15 ? * 2-6 *,60,,usr_data
-USR_AUDRATE_REVERT,,Aritzia Audit Sampling Rate Revert,0,cron,[select rtstr1,
+};","$LESDIR/log/usr_aud_rate.log","","0","0 0 15 ? * 2-6 *","60","","usr_data"
+"USR_AUDRATE_REVERT","","Aritzia Audit Sampling Rate Revert","0","cron","[select rtstr1,
         rtflt1,
         rtflt2,
         wh_id
@@ -4696,8 +4696,8 @@ if (@? = 0)
            and mode = 'A'
            and path = '$LESDIR/log'
     }
-};,$LESDIR/log/usr_audrate_revert.log,,0,0 0 19 ? * 2-6 *,60,,usr_data
-USR_INT_ASN_FTPCOD,,Aritzia Correct ASN Partial Ftpcods,0,timer,list warehouses
+};","$LESDIR/log/usr_audrate_revert.log","","0","0 0 19 ? * 2-6 *","60","","usr_data"
+"USR_INT_ASN_FTPCOD","","Aritzia Correct ASN Partial Ftpcods","0","timer","list warehouses
 |
 [select rt.trknum,
         id.prtnum,
@@ -4747,8 +4747,8 @@ if (@? = 0)
       where invlod.stoloc = @trknum
         and invdtl.prtnum = @prtnum
         and invdtl.ftpcod != @ftpcod]
-},,,0,,0,900,
-USR_INT_ASN_FTPCOD_FIX,,Aritzia Correct ASN Partial Ftpcods,0,timer,/*Find receiving trucks and parts that have multiple footprints*/
+}","","","0","","0","900",""
+"USR_INT_ASN_FTPCOD_FIX","","Aritzia Correct ASN Partial Ftpcods","0","timer","/*Find receiving trucks and parts that have multiple footprints*/
 [select rt.trknum,
         id.prtnum,
         count(distinct id.ftpcod) as ftpcod_count
@@ -4796,8 +4796,8 @@ if (@? = 0)
       where invlod.stoloc = @trknum
         and invdtl.prtnum = @prtnum
         and invdtl.ftpcod != @ftpcod]
-},,,0,,0,900,
-USR_SORTER_RECIRC_ALERT,,Pack Sorter Recirculation Email Alert,1,timer,publish data
+}","","","0","","0","900",""
+"USR_SORTER_RECIRC_ALERT","","Pack Sorter Recirculation Email Alert","1","timer","publish data
  where uc_scan_count_threshold = 2
    and uc_recirc_time_window = 30
    and wh_id = 'DC03'
@@ -4847,9 +4847,9 @@ if (@? = 0)
                and hostname = @hostname
         }
     }
-};,,,0,,0,900,
-USR_WCS_DEFERRED_LOGGING,,USR_WCS_DEFERRED_LOGGING,0,cron,execute deferred commands where exec_typ = 'WCS',,,0,0 * * * * ?,,,
-USR-ASN-FTPCOD-FIX,,Aritzia Correct ASN Partial Ftpcods,0,timer,list warehouses
+};","","","0","","0","900",""
+"USR_WCS_DEFERRED_LOGGING","","USR_WCS_DEFERRED_LOGGING","0","cron","execute deferred commands where exec_typ = 'WCS'","","","0","0 * * * * ?","","",""
+"USR-ASN-FTPCOD-FIX","","Aritzia Correct ASN Partial Ftpcods","0","timer","list warehouses
 |
 [select rt.trknum,
         id.prtnum,
@@ -4899,5 +4899,5 @@ if (@? = 0)
       where invlod.stoloc = @trknum
         and invdtl.prtnum = @prtnum
         and invdtl.ftpcod != @ftpcod]
-},,,0,,0,900,
-USR_DEFERRED-EXECUTION-INV-RCV,,Aritzia Deferred Execution - Receieve Complete,1,timer,execute deferred commands where comflg = 1 and exec_typ = 'RCV',$LESDIR/log/DeferredExcecutionRcvComplete.log,,0,,60,60,usr_data
+}","","","0","","0","900",""
+"USR_DEFERRED-EXECUTION-INV-RCV","","Aritzia Deferred Execution - Receieve Complete","1","timer","execute deferred commands where comflg = 1 and exec_typ = 'RCV'","$LESDIR/log/DeferredExcecutionRcvComplete.log","","0","","60","60","usr_data"
